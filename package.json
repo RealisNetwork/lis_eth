@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/RealisNetwork/lis_eth#readme",
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "hardhat": "^2.14.0"
   },
   "dependencies": {

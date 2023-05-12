@@ -89,3 +89,11 @@ lerna-debug.log
 # System Files
 .DS_Store
 Thumbs.db
+coverage.json
+typechain
+typechain-types
+
+# Hardhat files
+cache
+artifacts
+
