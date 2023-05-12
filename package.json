@@ -15,5 +15,11 @@
   "bugs": {
     "url": "https://github.com/RealisNetwork/lis_eth/issues"
   },
-  "homepage": "https://github.com/RealisNetwork/lis_eth#readme"
+  "homepage": "https://github.com/RealisNetwork/lis_eth#readme",
+  "devDependencies": {
+    "hardhat": "^2.14.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.3"
+  }
 }
