@@ -20,6 +20,8 @@
   "homepage": "https://github.com/RealisNetwork/lis_eth#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "ethers": "^5.7.2",
     "hardhat": "^2.14.0"
   },
   "dependencies": {
