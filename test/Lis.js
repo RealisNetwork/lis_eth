@@ -1,8 +1,13 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
+const { BigNumber } = ethers;
+
 const { expectRevert } = require('@openzeppelin/test-helpers')
-const { makeAccessControleErrorStr } = require('./utils/errors-strings');
+const { 
+    makeAccessControleErrorStr, 
+    revokeRoleErrorStr 
+} = require('./utils/errors-strings');
 
 const ONE_GWEI = 1_000_000_000;
 const BURNER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("BURNER_ROLE"));
@@ -101,12 +106,9 @@ describe('Lis', () => {
         it('Wallet with MINTER role can do mint', async () => {
             await Lis.connect(owner).grantRole(MINTER_ROLE, acc1.address);
             const ownerBalanceBefore = await Lis.balanceOf(owner.address);
-            const mintAmount = ONE_GWEI;
+            const mintAmount = BigNumber.from(ONE_GWEI);
             await Lis.connect(acc1).mint(mintAmount);
             const ownerBalanceAfter = await Lis.balanceOf(owner.address);
-            console.log('ownerBalanceAfter = ', ownerBalanceAfter);
-            console.log('ownerBalanceBefore = ', ownerBalanceBefore);
-            console.log('mintAmount = ', mintAmount);
             expect(ownerBalanceAfter.sub(ownerBalanceBefore)).to.equal(mintAmount);
             await Lis.connect(owner).revokeRole(MINTER_ROLE, acc1.address);
         })
@@ -115,7 +117,7 @@ describe('Lis', () => {
             await Lis.connect(owner).grantRole(BURNER_ROLE, acc1.address);
             const ownerBalanceBefore = await Lis.balanceOf(owner.address);
             const burnAmount = ONE_GWEI;
-            await Lis.connect(acc1).burn(owner.address, burnAmount);
+            await Lis.connect(acc1).burn(burnAmount);
             const ownerBalanceAfter = await Lis.balanceOf(owner.address);
             expect(ownerBalanceBefore.sub(ownerBalanceAfter)).to.equal(burnAmount);
             await Lis.connect(owner).revokeRole(BURNER_ROLE, acc1.address);

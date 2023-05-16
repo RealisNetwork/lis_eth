@@ -10,18 +10,17 @@ contract Lis is ERC20, AccessControl, Ownable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
-    constructor(uint256 initialSupply) ERC20("Realis", "LIS") {
-        _mint(msg.sender, initialSupply);
+    constructor() ERC20("Realis", "LIS") {
         // Grant the contract deployer the default admin role: it will be able
         // to grant and revoke any roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function mint(uint256 amount) public onlyRole(MINTER_ROLE) {
-        _mint(msg.sender, amount);
+        _mint(owner(), amount);
     }
 
     function burn(uint256 amount) public onlyRole(BURNER_ROLE) {
-        _burn(msg.sender, amount);
+        _burn(owner(), amount);
     }
 }

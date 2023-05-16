@@ -8,6 +8,9 @@ const makeAccessControleErrorStr = (address, role) => {
     }
 }
 
+const revokeRoleErrorStr = 'Forbiden to revoke roles.';
+
 module.exports = {
     makeAccessControleErrorStr,
+    revokeRoleErrorStr,
 };

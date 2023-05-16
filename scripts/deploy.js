@@ -5,9 +5,21 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 const hre = require("hardhat");
-const ethers = require('ethers');
+const { ethers } = require('hardhat');
+
+async function deployLis(deploy) {
+  if (!deploy) {
+    return;
+  }
+  const lisArt = await ethers.getContractFactory('Lis');
+  console.log('Deploying Lis...');
+  const Lis = await lisArt.deploy();
+  await Lis.deployed();
+  console.log('Lis deployed to: ', Lis.address);
+}
 
 async function main() {
+  await deployLis(true);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
