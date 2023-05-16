@@ -4,7 +4,10 @@
   "description": "LIS ethereum based project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx hardhat test",
+    "test_gas": "REPORT_GAS=true npx hardhat test",
+    "start": "npx hardhat node",
+    "compile": "npx hardhat compile"
   },
   "repository": {
     "type": "git",
@@ -18,9 +21,14 @@
   "homepage": "https://github.com/RealisNetwork/lis_eth#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@openzeppelin/test-helpers": "^0.5.16",
+    "chai": "^4.3.7",
+    "ethers": "^5.7.2",
     "hardhat": "^2.14.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.3"
+    "@openzeppelin/contracts": "^4.8.3",
+    "dotenv": "^16.0.3"
   }
 }

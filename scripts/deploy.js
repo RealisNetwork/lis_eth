@@ -5,23 +5,21 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 const hre = require("hardhat");
+const { ethers } = require('hardhat');
+
+async function deployLis(deploy) {
+  if (!deploy) {
+    return;
+  }
+  const lisArt = await ethers.getContractFactory('Lis');
+  console.log('Deploying Lis...');
+  const Lis = await lisArt.deploy();
+  await Lis.deployed();
+  console.log('Lis deployed to: ', Lis.address);
+}
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
-
-  const lockedAmount = hre.ethers.utils.parseEther("0.001");
-
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-  await lock.deployed();
-
-  console.log(
-    `Lock with ${ethers.utils.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
+  await deployLis(true);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

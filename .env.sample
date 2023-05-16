@@ -1,0 +1,2 @@
+INFURA_PROJECT_ID=your_infura_project_id
+PRIVATE_KEY=your_private_key
