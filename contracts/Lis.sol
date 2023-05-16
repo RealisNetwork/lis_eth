@@ -17,11 +17,11 @@ contract Lis is ERC20, AccessControl, Ownable {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
-        _mint(to, amount);
+    function mint(uint256 amount) public onlyRole(MINTER_ROLE) {
+        _mint(msg.sender, amount);
     }
 
-    function burn(address from, uint256 amount) public onlyRole(BURNER_ROLE) {
-        _burn(from, amount);
+    function burn(uint256 amount) public onlyRole(BURNER_ROLE) {
+        _burn(msg.sender, amount);
     }
 }

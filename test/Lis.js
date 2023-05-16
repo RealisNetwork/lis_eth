@@ -93,7 +93,7 @@ describe('Lis', () => {
 
         it(`Admin can't call mint with no MINTER role`, async () => {
             await expectRevert(
-                Lis.connect(owner).mint(owner.address, ONE_GWEI),
+                Lis.connect(owner).mint(ONE_GWEI),
                 makeAccessControleErrorStr(owner.address, MINTER_ROLE)
             );
         })
@@ -102,8 +102,11 @@ describe('Lis', () => {
             await Lis.connect(owner).grantRole(MINTER_ROLE, acc1.address);
             const ownerBalanceBefore = await Lis.balanceOf(owner.address);
             const mintAmount = ONE_GWEI;
-            await Lis.connect(acc1).mint(owner.address, mintAmount);
+            await Lis.connect(acc1).mint(mintAmount);
             const ownerBalanceAfter = await Lis.balanceOf(owner.address);
+            console.log('ownerBalanceAfter = ', ownerBalanceAfter);
+            console.log('ownerBalanceBefore = ', ownerBalanceBefore);
+            console.log('mintAmount = ', mintAmount);
             expect(ownerBalanceAfter.sub(ownerBalanceBefore)).to.equal(mintAmount);
             await Lis.connect(owner).revokeRole(MINTER_ROLE, acc1.address);
         })
