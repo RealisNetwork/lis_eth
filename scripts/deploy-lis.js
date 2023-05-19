@@ -19,7 +19,8 @@ async function deployLis(deploy) {
 }
 
 async function main() {
-  await deployLis(true);
+  // set false to not deploy lis again
+  await deployLis(false);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
