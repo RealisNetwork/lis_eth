@@ -19,7 +19,7 @@ async function deployLis() {
     const [ owner, acc1, acc2 ] = await ethers.getSigners();
 
     const lisArt = await ethers.getContractFactory('Lis');
-    const lis = await lisArt.deploy(ONE_GWEI);
+    const lis = await lisArt.deploy();
     await lis.deployed();
 
     return { lis, owner, acc1, acc2 };
