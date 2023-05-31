@@ -10,10 +10,12 @@ const {
     transferFromErrorStr,
     nftMaxSupplyErrorStr,
     nftMintTimeErrorStr,
+    nftNoOwnerErrorStr,
 } = require('./utils/errors-strings');
 
 const ONE_GWEI = 1_000_000_000;
 const MINTER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINTER_ROLE"));
+const BURNER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("BURNER_ROLE"));
 const DEFAULT_ADMIN_ROLE = ethers.constants.HashZero;
 
 describe('NFT', function () {
@@ -21,23 +23,32 @@ describe('NFT', function () {
     let owner;
     let addr1;
     let addr2;
+    let signer;
+    const signerPrivate = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
     const MAX_SUPPLY =  10;
     const RIGHT_TIME = 1685281800000;
     const TOKEN_NAME = 'LisNft';
     const TOKEN_SYMBOL = 'LNFT';
-    const nftHash = ethers.utils.hexZeroPad('0x6d795f76616c7565', 32);
+    // const nftHash = ethers.utils.hexZeroPad('0x6d795f76616c7565', 32);
+    const nftHash = '0x0000000000000000000000000000000000000000000000006d795f76616c7565';
     const PROXY_REGISTRY = '0x58807baD0B376efc12F5AD86aAc70E78ed67deaE';
+    const CONTRACT_URI = 'https://evm.realiscompany.com/';
+    const BASE_URI = 'https://evm.realiscompany-base.com/';
   
     beforeEach(async function () {
       const ERC721Token = await ethers.getContractFactory('LisNft');
       [owner, addr1, addr2] = await ethers.getSigners();
+      signer = owner;
   
       token = await ERC721Token.deploy(
         RIGHT_TIME,
         MAX_SUPPLY,
         TOKEN_NAME,
         TOKEN_SYMBOL,
+        signer.address,
         PROXY_REGISTRY,
+        BASE_URI,
+        CONTRACT_URI,
       );
       await token.deployed();
     });
@@ -89,10 +100,26 @@ describe('NFT', function () {
             );
         })
 
+        it(`Admin can't call BURN with no BURNER_ROLE`, async () => {
+          await expectRevert(
+            token.connect(owner).burn(1),
+            makeAccessControleErrorStr(owner.address, BURNER_ROLE)
+          );
+        })
+
         it('Admin should be able to give MINTER role', async function() {
           await token.connect(owner).grantRole(MINTER_ROLE, addr1.address);
           expect(await token.hasRole(MINTER_ROLE, addr1.address)).to.equal(true);
       });
+
+        it('Admin should be able to set BURNER_ROLE to another', async () => {
+          await token.connect(owner).grantRole(BURNER_ROLE, addr1.address);
+          expect(await token.hasRole(BURNER_ROLE, addr1.address)).to.equal(true);
+        })
+
+        it('Root by default should not have BURNER_ROLE', async () => {
+          expect(await token.hasRole(BURNER_ROLE, owner.address)).to.equal(false);
+        })
     })
 
     describe('Token transfer and mint', () => {
@@ -211,7 +238,10 @@ describe('NFT', function () {
             MAX_SUPPLY,
             TOKEN_NAME,
             TOKEN_SYMBOL,
+            signer.address,
             PROXY_REGISTRY,
+            BASE_URI,
+            CONTRACT_URI,
           );
           await token.deployed();
         });
@@ -236,7 +266,10 @@ describe('NFT', function () {
         1,
         TOKEN_NAME,
         TOKEN_SYMBOL,
+        signer.address,
         PROXY_REGISTRY,
+        BASE_URI,
+        CONTRACT_URI,
       );
       await token.deployed();
     });
@@ -260,4 +293,130 @@ describe('NFT', function () {
       expect(event.hash).to.equal(nftHash);
     })
   })
+
+  describe('Burn', async function () {
+    const nftHash1 = ethers.utils.hexZeroPad('0x6d795f76616c7564', 32);
+    const nftHash2 = ethers.utils.hexZeroPad('0x6d795f76616c7566', 32);
+    const nftHash3 = ethers.utils.hexZeroPad('0x6d795f76616c7567', 32);
+    const nftHash4 = ethers.utils.hexZeroPad('0x6d795f76616c7568', 32);
+
+    it('Burner should be able to burn token', async () => {
+      await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
+      await token.connect(owner).mint(owner.address, nftHash);
+      const tokenId = 1;
+      await token.connect(owner).grantRole(BURNER_ROLE, owner.address);
+      
+      const filter = token.filters.Burn(null);
+      const eventPromise = new Promise((resolve) => {
+        token.on(filter, (tokenId) => {
+            resolve({ tokenId });
+          });
+        });
+      await token.connect(owner).burn(tokenId);
+
+      const event = await eventPromise;
+
+      expect(event.tokenId).to.equal(tokenId);
+    })
+    //TODO: Check on length >= 256
+    it('Burner should be able to bulk burn tokens', async () => {
+      await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
+      await token.connect(owner).grantRole(BURNER_ROLE, owner.address);
+      const tokenIds = [1, 2, 3, 4, 5];
+      await token.connect(owner).mint(owner.address, nftHash);
+      await token.connect(owner).mint(owner.address, nftHash1);
+      await token.connect(owner).mint(owner.address, nftHash2);
+      await token.connect(owner).mint(owner.address, nftHash3);
+      await token.connect(owner).mint(owner.address, nftHash4);
+
+      for (let i = 0; i < tokenIds.length; i++) {
+        expect(await token.ownerOf(tokenIds[0])).to.equal(owner.address);
+        expect(await token.ownerOf(tokenIds[1])).to.equal(owner.address);
+        expect(await token.ownerOf(tokenIds[2])).to.equal(owner.address);
+        expect(await token.ownerOf(tokenIds[3])).to.equal(owner.address);
+        expect(await token.ownerOf(tokenIds[4])).to.equal(owner.address); 
+      }
+
+      const txHash = await token.connect(owner).bulkBurn(tokenIds);
+      const receipt = await txHash.wait();
+      const burnEvents = receipt.events.filter((event) => event.event === 'Burn');
+
+      const burnedTokenIds = burnEvents.map((e) => e.args.tokenId.toNumber());
+      expect(burnEvents).to.have.lengthOf(tokenIds.length);
+      expect(burnedTokenIds).to.have.members(tokenIds);
+
+      for (let i = 0; i < tokenIds.length; i++) {
+        await expectRevert(
+          token.ownerOf(tokenIds[i]),
+          nftNoOwnerErrorStr
+        )
+      }
+    })
+  })
+
+  describe('Check contract URIS', async function () {
+    it('Contract URI == valut put in constructor', async () => {
+      expect(await token.contractURI()).to.equal(CONTRACT_URI);
+    })
+
+    it('Token URI == baseUri + hash', async () => {
+      await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
+      await token.connect(owner).mint(owner.address, nftHash);
+      const tokenId = 1;
+      const res = await token.ownerOf(tokenId);
+      console.log('Result = ', res);
+      const uri = await token.tokenURI(tokenId);
+      const hsh = await token.nftHashes(tokenId);
+      console.log('NFT HASHES = ', hsh);
+      console.log('Actuaal = ', uri);
+      expect(uri).to.equal(`${BASE_URI}${nftHash}`);
+    })
+  })
+
+    // describe('Check signed transfer', async function () {
+    //   it('Signer can sign [transferWithSignature] transaction', async function () {
+    //     await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
+    //     await token.connect(owner).mint(addr1.address, nftHash);
+
+    //     const tokenId = 1;
+    //     const transferMessage = {
+    //       from: owner.address,
+    //       to: addr1.address,
+    //       tokenId,
+    //     };
+
+    //     console.log(transferMessage);
+
+    //     const signerWallet = new ethers.Wallet(signerPrivate, ethers.provider)
+        
+    //     const transferMessageHash = ethers.utils.keccak256(
+    //       ethers.utils.defaultAbiCoder.encode(
+    //         ['address', 'address', 'uint256'],
+    //         [transferMessage.from, transferMessage.to, transferMessage.tokenId]
+    //       )
+    //     );
+
+    //     const signature = await signerWallet.signMessage(ethers.utils.arrayify(transferMessageHash));
+    //     const signatureComponents = ethers.utils.splitSignature(signature);
+
+    //     // const signature = await signer.signMessage(ethers.utils.arrayify(transferMessageHash));
+    //     // // Split the signature into its components (r, s, v)
+    //     // const signatureComponents = ethers.utils.splitSignature(signature);
+
+    //     // console.log('signer = ', signer);
+
+    //     const transferTx = await token.transferWithSignature(
+    //       transferMessage,
+    //       signatureComponents.v,
+    //       signatureComponents.r,
+    //       signatureComponents.s
+    //     );
+
+    //     // Wait for the transaction to be mined
+    //     await transferTx.wait();
+    //     console.log(transferTx.hash);
+
+    //   })
+    // })
+
   });

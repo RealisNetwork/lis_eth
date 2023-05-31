@@ -18,7 +18,11 @@ async function deployLisNft(deploy) {
     nftArgs.MINT_TIMESTAMP,
     nftArgs.MAX_SUPPLY,
     nftArgs.TOKEN_NAME,
-    nftArgs.TOKEN_SYMBOL
+    nftArgs.TOKEN_SYMBOL,
+    nftArgs.SIGNER_WALLET,
+    nftArgs.PROXY_REGISTRY,
+    nftArgs.BASE_URI,
+    nftArgs.CONTRACT_URI,
   );
   await Lis.deployed();
   console.log('LisNft deployed to: ', Lis.address);

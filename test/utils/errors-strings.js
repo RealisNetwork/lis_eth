@@ -13,6 +13,7 @@ const revokeRoleErrorStr = 'Forbiden to revoke roles.';
 const transferFromErrorStr = 'ERC721: caller is not token owner or approved';
 const nftMaxSupplyErrorStr = 'Collection limit has been exceeded.';
 const nftMintTimeErrorStr = 'Collection mint time has been exceeded.';
+const nftNoOwnerErrorStr = 'ERC721: invalid token ID';
 
 module.exports = {
     makeAccessControleErrorStr,
@@ -20,4 +21,5 @@ module.exports = {
     transferFromErrorStr,
     nftMaxSupplyErrorStr,
     nftMintTimeErrorStr,
+    nftNoOwnerErrorStr,
 };
