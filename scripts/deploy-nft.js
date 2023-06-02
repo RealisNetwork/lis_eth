@@ -21,6 +21,7 @@ async function deployLisNft(deploy) {
     nftArgs.TOKEN_SYMBOL,
     nftArgs.SIGNER_WALLET,
     nftArgs.PROXY_REGISTRY,
+    nftArgs.FEE_RECEIVER,
     nftArgs.BASE_URI,
     nftArgs.CONTRACT_URI,
   );

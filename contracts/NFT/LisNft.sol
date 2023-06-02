@@ -5,18 +5,13 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./common/meta-transactions/ContextMixin.sol";
 import "./common/meta-transactions/NativeMetaTransaction.sol";
 
 contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessControl {
     using Counters for Counters.Counter;
-
-    struct TransferMessage {
-        address from;
-        address to;
-        uint256 tokenId;
-    }
 
     /**
      * OZ Counter util to keep track of the next available ID.
@@ -37,11 +32,14 @@ contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessC
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
-    // mapping(uint256 => bytes32) public nftHashes;
     mapping(uint256 => string) public nftHashes;
 
     address public _proxyRegistryAddress;
     address public _signerWallet;
+
+    address payable public feeReceiver;
+    uint256 public ethPrice;
+    mapping(address => uint256) public tokensPrices;
 
     constructor(
         uint256 mintTimestamp, 
@@ -50,6 +48,7 @@ contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessC
         string memory symbol,
         address signerWallet,
         address proxyRegistryAddress,
+        address payable _feeReceiver,
         string memory baseUri,
         string memory contractUri
         ) ERC721(name, symbol) {
@@ -60,14 +59,54 @@ contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessC
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setBaseURI(baseUri);
         _setContractURI(contractUri);
+        setFeeReceiver(_feeReceiver);
 
         // nextTokenId is initialized to 1, since starting at 0 leads to higher gas cost for the first minter
         _nextTokenId.increment();
         _initializeEIP712(name);
     }
 
-    // function mint(address receiver, bytes32 nftHash) external onlyRole(MINTER_ROLE) returns (uint256) {
-        function mint(address receiver, string memory nftHash) external onlyRole(MINTER_ROLE) returns (uint256) {
+    function setFeeReceiver(address payable _feeReceiver) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        feeReceiver = _feeReceiver;
+    }
+
+    function setEthPrice(uint256 newPrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        ethPrice = newPrice;
+    }
+
+    function setTokenPrice(address token, uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        tokensPrices[token] = price;
+    }
+
+    function mintByEth(address receiver, string memory nftHash) external payable returns (uint256) {
+        require(ethPrice > 0, "There is no price set.");
+        require(msg.value == ethPrice, "Wrong amount sent.");
+        uint256 tokenId = _mint(receiver, nftHash);
+        feeReceiver.transfer(msg.value);
+        return tokenId;
+    }
+
+    function mintByToken(address receiver, string memory nftHash, address token) external returns (uint256) {
+        require(tokensPrices[token] > 0, "This token not supported.");
+        IERC20 erc20 = IERC20(token);
+        require(
+            erc20.allowance(msg.sender, address(this)) >= tokensPrices[token],
+            "Insufficient allowance."
+        );
+        require(
+            erc20.balanceOf(msg.sender) >= tokensPrices[token],
+            "Insufficient balance."
+        );
+        uint256 tokenId = _mint(receiver, nftHash);
+        erc20.transferFrom(msg.sender, feeReceiver, tokensPrices[token]);
+        return tokenId;
+    }
+
+    function mint(address receiver, string memory nftHash) external onlyRole(MINTER_ROLE) returns (uint256) {
+        return _mint(receiver, nftHash);
+    }
+
+    function _mint(address receiver, string memory nftHash) private returns (uint256) {
         require(totalSupply() < _maxSupply, "Collection limit has been exceeded.");
         require(block.timestamp <= _mintTimestamp, "Collection mint time has been exceeded.");
 
@@ -146,18 +185,18 @@ contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessC
     }
 
     function transferWithSignature(
-        TransferMessage memory message,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory signature
     ) external {
-        require(message.from == msg.sender, "Invalid sender");
+        require(from == msg.sender, "Invalid sender");
         require(
-            verifySignature(message, v, r, s),
+            verifySignature(from, to, tokenId, signature),
             "Invalid signature"
         );
 
-        _transfer(message.from, message.to, message.tokenId);
+        _transfer(from, to, tokenId);
     }
 
     // In case of switching domain
@@ -219,27 +258,62 @@ contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessC
     }
 
     function verifySignature(
-        TransferMessage memory message,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal view returns (bool) {
-        bytes32 messageHash = getMessageHash(message);
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory signature
+    ) public view returns (bool) {
+        bytes32 messageHash = getMessageHash(from, to, tokenId);
         bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
-        address recoveredSigner = ecrecover(ethSignedMessageHash, v, r, s);
-        return recoveredSigner == _signerWallet;
+
+        return recoverSigner(ethSignedMessageHash, signature) == _signerWallet;
     }
 
-    function getMessageHash(TransferMessage memory message)
-        internal
+    function recoverSigner(
+        bytes32 _ethSignedMessageHash,
+        bytes memory _signature
+    ) public pure returns (address) {
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+
+        return ecrecover(_ethSignedMessageHash, v, r, s);
+    }
+
+    function splitSignature(
+        bytes memory sig
+    ) public pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(sig.length == 65, "invalid signature length");
+
+        assembly {
+            /*
+            First 32 bytes stores the length of the signature
+
+            add(sig, 32) = pointer of sig + 32
+            effectively, skips first 32 bytes of signature
+
+            mload(p) loads next 32 bytes starting at the memory address p into memory
+            */
+
+            // first 32 bytes, after the length prefix
+            r := mload(add(sig, 32))
+            // second 32 bytes
+            s := mload(add(sig, 64))
+            // final byte (first byte of the next 32 bytes)
+            v := byte(0, mload(add(sig, 96)))
+        }
+
+        // implicitly return (r, s, v)
+    }
+
+    function getMessageHash(address from, address to, uint256 tokenId)
+        public
         pure
         returns (bytes32)
     {
         return keccak256(
             abi.encodePacked(
-                message.from,
-                message.to,
-                message.tokenId
+                from,
+                to,
+                tokenId
             )
         );
     }
