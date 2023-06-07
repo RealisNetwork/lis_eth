@@ -201,10 +201,10 @@ describe('NFT', function () {
 
           it('should be able to handle Mint event', async function () {
             // Subscribe to the Transfer event
-            const filter = token.filters.Mint(null, null);
+            const filter = token.filters.Mint(null, null, null);
             const eventPromise = new Promise((resolve) => {
-            token.on(filter, (owner, tokenId) => {
-                resolve({ owner, tokenId });
+            token.on(filter, (owner, tokenId, hash) => {
+                resolve({ owner, tokenId, hash });
             });
             });
 
@@ -300,7 +300,7 @@ describe('NFT', function () {
     await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
 
     it('Try to mint with max supply = 1', async function () {
-      const filter = token.filters.Mint(null, null);
+      const filter = token.filters.Mint(null, null, null);
       const eventPromise = new Promise((resolve) => {
         token.on(filter, (owner, tokenId, hash) => {
           resolve({ owner, tokenId, hash });
@@ -506,10 +506,10 @@ describe('NFT', function () {
 
     it('NFT can be minted by any wallet if sent value == eth price', async function () {
       await token.connect(owner).setEthPrice(ONE_GWEI);
-      const filter = token.filters.Mint(null, null);
+      const filter = token.filters.Mint(null, null, null);
             const eventPromise = new Promise((resolve) => {
-            token.on(filter, (owner, tokenId) => {
-                resolve({ owner, tokenId });
+            token.on(filter, (owner, tokenId, hash) => {
+                resolve({ owner, tokenId, hash });
               });
             });
 
@@ -556,10 +556,10 @@ describe('NFT', function () {
       await lis.connect(owner).transfer(addr1.address, ONE_GWEI);
       const balanceBefore = await lis.balanceOf(feeReceiver);
 
-      const filter = token.filters.Mint(null, null);
+      const filter = token.filters.Mint(null, null, null);
             const eventPromise = new Promise((resolve) => {
-            token.on(filter, (owner, tokenId) => {
-                resolve({ owner, tokenId });
+            token.on(filter, (owner, tokenId, hash) => {
+                resolve({ owner, tokenId, hash });
               });
             });
 
