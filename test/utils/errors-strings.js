@@ -14,6 +14,7 @@ const transferFromErrorStr = 'ERC721: caller is not token owner or approved';
 const nftMaxSupplyErrorStr = 'Collection limit has been exceeded.';
 const nftMintTimeErrorStr = 'Collection mint time has been exceeded.';
 const nftNoOwnerErrorStr = 'ERC721: invalid token ID';
+const notOwnerErrorStr = 'Ownable: caller is not the owner';
 
 module.exports = {
     makeAccessControleErrorStr,
@@ -22,4 +23,5 @@ module.exports = {
     nftMaxSupplyErrorStr,
     nftMintTimeErrorStr,
     nftNoOwnerErrorStr,
+    notOwnerErrorStr,
 };
