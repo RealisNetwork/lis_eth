@@ -74,7 +74,7 @@ contract EggNft is ERC721, Ownable, ContextMixin, NativeMetaTransaction, AccessC
     }
 
     function bulkBurn(uint256[] calldata ids) external onlyRole(BURNER_ROLE) {
-        for (uint256 i = 0; i < ids.length; ++i) {
+        for (uint8 i = 0; i < ids.length; ++i) {
             burn(ids[i]);
         }
     }
