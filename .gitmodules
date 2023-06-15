@@ -1,0 +1,6 @@
+[submodule "lib/utility-contracts"]
+	path = lib/utility-contracts
+	url = https://github.com/jameswenzel/utility-contracts
+[submodule "lib/ERC721A"]
+	path = lib/ERC721A
+	url = https://github.com/chiru-labs/ERC721A
