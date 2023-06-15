@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import {
     ERC721ContractMetadata,
@@ -23,17 +24,18 @@ import {
     ERC721SeaDropStructsErrorsAndEvents
 } from "./lib/ERC721SeaDropStructsErrorsAndEvents.sol";
 
-import { ERC721A } from "ERC721A/ERC721A.sol";
+import { ERC721A } from "../../../lib/ERC721A/contracts/ERC721A.sol";
 
-import { ReentrancyGuard } from "solmate/utils/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "solmate/src/utils/ReentrancyGuard.sol";
 
 import {
     IERC165
-} from "openzeppelin-contracts/utils/introspection/IERC165.sol";
+} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
 
 import {
     DefaultOperatorFilterer
-} from "operator-filter-registry/DefaultOperatorFilterer.sol";
+} from "operator-filter-registry/src/DefaultOperatorFilterer.sol";
 
 /**
  * @title  ERC721SeaDrop
@@ -509,6 +511,7 @@ contract ERC721SeaDrop is
     function approve(address operator, uint256 tokenId)
         public
         override
+        payable
         onlyAllowedOperatorApproval(operator)
     {
         super.approve(operator, tokenId);
@@ -532,7 +535,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
+    ) public override payable onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -543,7 +546,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override onlyAllowedOperator(from) {
+    ) public override payable onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -568,7 +571,7 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override onlyAllowedOperator(from) {
+    ) public override payable onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 
