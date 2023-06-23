@@ -1,10 +1,11 @@
 const nftArgs = {
-    NAME: 'MeowgonEgg',
-    SYMBOL: 'MEGG',
-    BASE_URI: 'https://evm.realiscompany.com/',
-    CONTRACT_URI: 'https://evm.realiscompany.com/',
+    name: 'MeowgonEgg',
+    symbol: 'MEGG',
+    allowedSeaDrop: [],
 };
 
-module.exports = {
-    nftArgs,
-};
+module.exports = [
+    nftArgs.name,
+    nftArgs.symbol,
+    nftArgs.allowedSeaDrop,
+];

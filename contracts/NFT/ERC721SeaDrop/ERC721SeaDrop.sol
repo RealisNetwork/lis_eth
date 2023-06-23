@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.0;
 pragma solidity 0.8.17;
 
 import {
@@ -31,7 +30,6 @@ import { ReentrancyGuard } from "solmate/src/utils/ReentrancyGuard.sol";
 import {
     IERC165
 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-
 
 import {
     DefaultOperatorFilterer
@@ -510,8 +508,8 @@ contract ERC721SeaDrop is
      */
     function approve(address operator, uint256 tokenId)
         public
-        override
         payable
+        override
         onlyAllowedOperatorApproval(operator)
     {
         super.approve(operator, tokenId);
@@ -535,7 +533,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override payable onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
 
@@ -546,7 +544,7 @@ contract ERC721SeaDrop is
         address from,
         address to,
         uint256 tokenId
-    ) public override payable onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
@@ -571,7 +569,7 @@ contract ERC721SeaDrop is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override payable onlyAllowedOperator(from) {
+    ) public payable override onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 

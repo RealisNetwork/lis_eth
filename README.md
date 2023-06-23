@@ -11,6 +11,9 @@ To launch project locally.
 To verify contract on scan websites, example of command:
 npx hardhat verify --network polygon 0xaf88bF8bD38A3C3413a97787869F865d63Ffc388
 
+npx hardhat verify --network polygon --constructor-args arguments.js DEPLOYED_CONTRACT_ADDRESS
+
+
 To deploy example:
 npx hardhat run --network polygon_main scripts/deploy.js
 
