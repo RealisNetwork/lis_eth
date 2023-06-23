@@ -10,17 +10,27 @@ module.exports = {
     compilers: [
       {
         version: "0.8.17",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        },
       },
       {
         version: "0.8.18",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        },
       },
     ],
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200
-      }
-    }
+    contractSizer: {
+      // runOnCompile: false,
+      allowUnlimitedContractSize: true,
+    },
   },
   networks: {
     goerly: {
