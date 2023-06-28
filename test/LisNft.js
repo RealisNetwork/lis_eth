@@ -643,30 +643,160 @@ describe('NFT', function () {
           'Invalid signature'
         );
       })
+
+      it('Only sender can call transferWithSignature', async function () {
+        await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
+        await token.connect(owner).mint(addr1.address, nftHash);
+  
+        const tokenId = 1;
+        const transferMessage = {
+          from: addr1.address,
+          to: addr2.address,
+          tokenId,
+        };
+  
+        const hash = await token.getMessageHash(transferMessage.from, transferMessage.to, transferMessage.tokenId);
+        const sig = await addr2.signMessage(ethers.utils.arrayify(hash));
+  
+        await expectRevert(
+          token.connect(addr2).transferWithSignature(
+            transferMessage.from,
+            transferMessage.to,
+            transferMessage.tokenId,
+            sig
+          ),
+          'Invalid sender'
+        );
+      })
     })
 
-    it('Only sender can call transferWithSignature', async function () {
+    describe('Check ERC721Enumerable', function () {
+      it('Returned tokens ids are right when burned element from middle.', async function () {
       await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
-      await token.connect(owner).mint(addr1.address, nftHash);
+      await token.connect(owner).grantRole(BURNER_ROLE, owner.address);
+      const tokenIds = [1, 2, 3, 4, 5];
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(1);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(2);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(3);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(4);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(5);
 
-      const tokenId = 1;
-      const transferMessage = {
-        from: addr1.address,
-        to: addr2.address,
-        tokenId,
-      };
+      const balanceOf = +(await token.balanceOf(owner.address));
 
-      const hash = await token.getMessageHash(transferMessage.from, transferMessage.to, transferMessage.tokenId);
-      const sig = await addr2.signMessage(ethers.utils.arrayify(hash));
+      for (let i = 0; i < balanceOf; i++) {
+        expect(await token.tokenOfOwnerByIndex(owner.address, i)).to.equal(tokenIds[i]);
+      }
 
-      await expectRevert(
-        token.connect(addr2).transferWithSignature(
-          transferMessage.from,
-          transferMessage.to,
-          transferMessage.tokenId,
-          sig
-        ),
-        'Invalid sender'
-      );
+      expect(await token.totalSupply()).to.equal(tokenIds.length);
+
+      const filter = token.filters.Burn(null);
+      const eventPromise = new Promise((resolve) => {
+        token.on(filter, (tokenId) => {
+            resolve({ tokenId });
+          });
+        });
+      const burnedTokenId = tokenIds[2];
+      await token.connect(owner).burn(burnedTokenId);
+      const removedIndex = tokenIds.indexOf(burnedTokenId);
+      const tokenIdsBurned = tokenIds.filter((el) => el !== burnedTokenId);
+      tokenIdsBurned.splice(removedIndex, 0, tokenIds[tokenIds.length - 1]);
+      tokenIdsBurned.pop();
+      const event = await eventPromise;
+      expect(event.tokenId).to.equal(burnedTokenId);
+      const balanceOfAfter = +(await token.balanceOf(owner.address));
+      for (let i = 0; i < balanceOfAfter; i++) {
+        expect(await token.tokenOfOwnerByIndex(owner.address, i)).to.equal(tokenIdsBurned[i]);
+      }
+      })
+
+      it('Returned tokens ids are right when burned element from begining.', async function () {
+      await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
+      await token.connect(owner).grantRole(BURNER_ROLE, owner.address);
+      const tokenIds = [1, 2, 3, 4, 5];
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(1);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(2);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(3);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(4);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(5);
+
+      const balanceOf = +(await token.balanceOf(owner.address));
+
+      for (let i = 0; i < balanceOf; i++) {
+        expect(await token.tokenOfOwnerByIndex(owner.address, i)).to.equal(tokenIds[i]);
+      }
+
+      expect(await token.totalSupply()).to.equal(tokenIds.length);
+
+      const filter = token.filters.Burn(null);
+      const eventPromise = new Promise((resolve) => {
+        token.on(filter, (tokenId) => {
+            resolve({ tokenId });
+          });
+        });
+      const burnedTokenId = tokenIds[0];
+      await token.connect(owner).burn(burnedTokenId);
+      const tokenIdsBurned = [...tokenIds];
+      tokenIdsBurned.shift();
+      tokenIdsBurned.splice(0, 0, tokenIds[tokenIds.length - 1]);
+      tokenIdsBurned.pop();
+      const event = await eventPromise;
+      expect(event.tokenId).to.equal(burnedTokenId);
+      const balanceOfAfter = +(await token.balanceOf(owner.address));
+      for (let i = 0; i < balanceOfAfter; i++) {
+        expect(await token.tokenOfOwnerByIndex(owner.address, i)).to.equal(tokenIdsBurned[i]);
+      }
+      })
+
+      it('Returned tokens ids are right when burned element from end.', async function () {
+      await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
+      await token.connect(owner).grantRole(BURNER_ROLE, owner.address);
+      const tokenIds = [1, 2, 3, 4, 5];
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(1);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(2);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(3);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(4);
+      await token.connect(owner).mint(owner.address, nftHash);
+      expect(await token.totalSupply()).to.equal(5);
+
+      const balanceOf = +(await token.balanceOf(owner.address));
+
+      for (let i = 0; i < balanceOf; i++) {
+        expect(await token.tokenOfOwnerByIndex(owner.address, i)).to.equal(tokenIds[i]);
+      }
+
+      expect(await token.totalSupply()).to.equal(tokenIds.length);
+
+      const filter = token.filters.Burn(null);
+      const eventPromise = new Promise((resolve) => {
+        token.on(filter, (tokenId) => {
+            resolve({ tokenId });
+          });
+        });
+      const burnedTokenId = tokenIds[tokenIds.length - 1];
+      await token.connect(owner).burn(burnedTokenId);
+      const tokenIdsBurned = [...tokenIds];
+      tokenIdsBurned.pop();
+      const event = await eventPromise;
+      expect(event.tokenId).to.equal(burnedTokenId);
+      const balanceOfAfter = +(await token.balanceOf(owner.address));
+      for (let i = 0; i < balanceOfAfter; i++) {
+        expect(await token.tokenOfOwnerByIndex(owner.address, i)).to.equal(tokenIdsBurned[i]);
+      }
+      })
     })
+
   })
