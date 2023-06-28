@@ -77,38 +77,70 @@ async function initializeDropContract(contract, params) {
 
 async function initializeDropContractInOnce(contract, params) {
   console.log('Initializing drop contract: ', contract.address);
-  const multiConfigure = {
-    maxSupply: params.maxSupply,
-    baseURI: 'https://evm.prod-us-west.realis.network/',
-    contractURI: 'https://evm.prod-us-west.realis.network/',
-    seaDropImpl: '0x00005EA00Ac477B1030CE78506496e8C2dE24bf5',
-    publicDrop: {
-      mintPrice: params.mintPrice,
-      startTime: params.startTime(),
-      endTime: params.endTime(),
-      maxTotalMintableByWallet: 1000,
-      feeBps: 1000,
-      restrictFeeRecipients: true,
-    },
-    dropURI: 'https://opensea-drops.mypinata.cloud/ipfs/bafkreifyf5lsonyu4fe5vz5kj6rnuppomynf6reg3ht5hjch7gbcjqz4wm',
-    allowListData: {
-      merkleRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
-      publicKeyURIs: ['https://opensea.io/.well-known/allowlist-pubkeys/mainnet/ALLOWLIST_ENCRYPTION_KEY_0.txt'],
-      allowListURI: 'https://opensea-drops.mypinata.cloud/ipfs/bafkreihfsrfuvqnu5zrfssy3k2qxtsspr753jl77xa3vgblmep6z4wqflu'
-    },
-    creatorPayoutAddress: '	0x7798dc46E620F948f94E79c0D9BB842c1E9E4DB3',
-    provenanceHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
-    allowedFeeRecipients: ['0x0000a26b00c1F0DF003000390027140000fAa719'],
-    disallowedFeeRecipients: [],
-    allowedPayers: ['0x58E845401C70F065c2D71C90CaEe3234aD534C4d'],
-    disallowedPayers: [],
-    tokenGatedAllowedNftTokens: [],
-    tokenGatedDropStages: [],
-    disallowedTokenGatedAllowedNftTokens: [],
-    signers: [],
-    signedMintValidationParams: [],
-    disallowedSigners: [],
-  }
+  // const multiConfigure = {
+  //   maxSupply: params.maxSupply,
+  //   baseURI: 'https://evm.prod-us-west.realis.network/',
+  //   contractURI: 'https://evm.prod-us-west.realis.network/',
+  //   seaDropImpl: '0x00005EA00Ac477B1030CE78506496e8C2dE24bf5',
+  //   publicDrop: {
+  //     mintPrice: params.mintPrice,
+  //     startTime: params.startTime(),
+  //     endTime: params.endTime(),
+  //     maxTotalMintableByWallet: 1000,
+  //     feeBps: 1000,
+  //     restrictFeeRecipients: true,
+  //   },
+  //   dropURI: 'https://opensea-drops.mypinata.cloud/ipfs/bafkreifyf5lsonyu4fe5vz5kj6rnuppomynf6reg3ht5hjch7gbcjqz4wm',
+  //   allowListData: {
+  //     merkleRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  //     publicKeyURIs: ['https://opensea.io/.well-known/allowlist-pubkeys/mainnet/ALLOWLIST_ENCRYPTION_KEY_0.txt'],
+  //     allowListURI: 'https://opensea-drops.mypinata.cloud/ipfs/bafkreihfsrfuvqnu5zrfssy3k2qxtsspr753jl77xa3vgblmep6z4wqflu'
+  //   },
+  //   creatorPayoutAddress: '	0x7798dc46E620F948f94E79c0D9BB842c1E9E4DB3',
+  //   provenanceHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  //   allowedFeeRecipients: ['0x0000a26b00c1F0DF003000390027140000fAa719'],
+  //   disallowedFeeRecipients: [],
+  //   allowedPayers: ['0x58E845401C70F065c2D71C90CaEe3234aD534C4d'],
+  //   disallowedPayers: [],
+  //   tokenGatedAllowedNftTokens: [],
+  //   tokenGatedDropStages: [],
+  //   disallowedTokenGatedAllowedNftTokens: [],
+  //   signers: [],
+  //   signedMintValidationParams: [],
+  //   disallowedSigners: [],
+  // }
+  const multiConfigure = [
+    100,
+    'https://evm.prod-us-west.realis.network/',
+    'https://evm.prod-us-west.realis.network/',
+    '0x00005EA00Ac477B1030CE78506496e8C2dE24bf5',
+    [
+      '10000000000000000',
+      '1687873208',
+      '1690464820',
+      1000,
+      1000,
+      true
+    ],
+    'https://opensea-drops.mypinata.cloud/ipfs/bafkreifyf5lsonyu4fe5vz5kj6rnuppomynf6reg3ht5hjch7gbcjqz4wm',
+    [
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+      ['https://opensea.io/.well-known/allowlist-pubkeys/mainnet/ALLOWLIST_ENCRYPTION_KEY_0.txt'],
+      'https://opensea-drops.mypinata.cloud/ipfs/bafkreihfsrfuvqnu5zrfssy3k2qxtsspr753jl77xa3vgblmep6z4wqflu'
+    ],
+    '0x7798dc46E620F948f94E79c0D9BB842c1E9E4DB3',
+    '0x0000000000000000000000000000000000000000000000000000000000000000',
+    ['0x0000a26b00c1F0DF003000390027140000fAa719'],
+    [],
+    ['0x58E845401C70F065c2D71C90CaEe3234aD534C4d'],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+]
   await contract.multiConfigure(multiConfigure, { gasLimit: 500000 });
   console.log('Contract initialized successfully.');
 }
