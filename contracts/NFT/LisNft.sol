@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 import "./common/meta-transactions/ContextMixin.sol";
 import "./common/meta-transactions/NativeMetaTransaction.sol";
 
-contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessControl {
+contract LisNft is ERC721Enumerable, ContextMixin, NativeMetaTransaction, Ownable, AccessControl {
     using Counters for Counters.Counter;
 
     /**
@@ -153,7 +154,7 @@ contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessC
      * Override isApprovedForAll to whitelist user's OpenSea proxy accounts to enable gas-less listings.
      */
     function isApprovedForAll(address owner, address operator)
-        override
+        override(ERC721, IERC721)
         public
         view
         returns (bool)
@@ -169,19 +170,13 @@ contract LisNft is ERC721, ContextMixin, NativeMetaTransaction, Ownable, AccessC
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(AccessControl, ERC721) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(AccessControl, ERC721Enumerable) returns (bool) {
         return
             interfaceId == type(IERC721).interfaceId ||
             interfaceId == type(IERC721Metadata).interfaceId ||
             interfaceId == type(IAccessControl).interfaceId ||
+            interfaceId == type(IERC721Enumerable).interfaceId ||
             super.supportsInterface(interfaceId);
-    }
-
-    /**
-        @dev Returns the total tokens minted so far.
-     */
-    function totalSupply() public view returns (uint256) {
-        return _nextTokenId.current() - 1 - _totalBurned.current();
     }
 
     function transferWithSignature(
