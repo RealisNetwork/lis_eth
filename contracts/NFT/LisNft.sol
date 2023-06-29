@@ -20,9 +20,8 @@ contract LisNft is ERC721Enumerable, ContextMixin, NativeMetaTransaction, Ownabl
      * Read more about it here: https://shiny.mirror.xyz/OUampBbIz9ebEicfGnQf5At_ReMHlZy0tB4glb9xQ0E
      */ 
     Counters.Counter private _nextTokenId;
-    Counters.Counter private _totalBurned;
     
-    uint256 private _mintTimestamp;
+    uint256 public _mintTimestamp;
     uint256 private _maxSupply;
     string private _baseUri;
     string private _contractUri;
@@ -133,7 +132,6 @@ contract LisNft is ERC721Enumerable, ContextMixin, NativeMetaTransaction, Ownabl
         //solhint-disable-next-line max-line-length
         require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: caller is not token owner or approved");
         _burn(tokenId);
-        _totalBurned.increment();
         emit Burn(tokenId);
     }
 
