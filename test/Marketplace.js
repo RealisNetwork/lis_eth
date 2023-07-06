@@ -200,7 +200,6 @@ describe('Marketplace', function() {
             await erc721.connect(owner).setApprovalForAll(marketplace.address, true);
             await erc721.connect(owner).approve(marketplace.address, 1);
             await erc721.connect(owner).approve(marketplace.address, 2);
-            // console.log('getApproved = ', (await erc721.connect(owner).getApproved(1)));
 
             const filter = marketplace.filters.List(null, null, null, null, null);
             const eventPromise = new Promise((resolve) => {
@@ -228,9 +227,7 @@ describe('Marketplace', function() {
             await erc721.connect(owner).mint(owner.address, nftHash);
             await erc721.connect(owner).mint(owner.address, nftHash);
             await mintLis(erc20Lis, owner);
-            // await erc721.connect(owner).setApprovalForAll(marketplace.address, true);
-            await erc721.connect(owner).approve(marketplace.address, 1);
-            await erc721.connect(owner).approve(marketplace.address, 2);
+            await erc721.connect(owner).setApprovalForAll(marketplace.address, true);
             await erc20Lis.connect(owner).transfer(addr1.address, nftPrice * 2);
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 1, nftPrice);
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 2, nftPrice);
@@ -286,7 +283,7 @@ describe('Marketplace', function() {
             await erc721.connect(addr2).transferFrom(owner.address, addr2.address, 1);
             await expectRevert(
                 marketplace.connect(addr1).purchaseByERC20([erc721.address, erc20Lis.address, 1]),
-                'ERC721: caller is not token owner or approved'
+                'Insufficient nft allowance.'
             );
             await erc721.connect(addr2).transferFrom(addr2.address, owner.address, 1);
 
@@ -512,6 +509,40 @@ describe('Marketplace', function() {
             expect(event.fee).to.equal(ethers.BigNumber.from(nftPrice).mul(FEE).div(100));
             expect(event.price).to.equal(nftPrice);
             expect(event.nftContract).to.equal(erc721.address);
+        })
+
+        it(`Throw error if seller transfered his nft.`, async function() {
+            const nftPrice = ONE_GWEI;
+            await erc721.connect(owner).mint(owner.address, nftHash);
+            await erc721.connect(owner).approve(marketplace.address, 1);
+            await marketplace.connect(owner).placeOnMarketplace(erc721.address, ZERO_ADDRESS, 1, nftPrice);
+            await erc721.connect(owner).approve(addr2.address, 1);
+            await erc721.connect(addr2).transferFrom(owner.address, addr2.address, 1);
+            await expectRevert(
+                marketplace.connect(addr1).purchaseByEth([erc721.address, 1], { value: nftPrice }),
+                'Insufficient nft allowance.'
+            );
+            await erc721.connect(addr2).transferFrom(addr2.address, owner.address, 1);
+
+            const filter = marketplace.filters.Purchase(null, null, null, null, null, null, null);
+            const eventPromise = new Promise((resolve) => {
+            marketplace.on(filter, (seller, buyer, nftContract, tokenId, currency, fee, price) => {
+                resolve({ seller, buyer, nftContract, tokenId, currency, fee, price });
+              });
+            });
+
+            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(nftPrice);
+            await erc721.connect(owner).approve(marketplace.address, 1);
+            await marketplace.connect(addr1).purchaseByEth([erc721.address, 1], { value: nftPrice });
+            const event = await eventPromise;
+            expect(event.seller).to.equal(owner.address);
+            expect(event.buyer).to.equal(addr1.address);
+            expect(event.fee).to.equal(ethers.BigNumber.from(nftPrice).mul(FEE).div(100));
+            expect(event.price).to.equal(nftPrice);
+            expect(event.nftContract).to.equal(erc721.address);
+            expect(event.tokenId).to.equal(1);
+            expect(event.currency).to.equal(ZERO_ADDRESS);
+            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(0);
         })
     })
 

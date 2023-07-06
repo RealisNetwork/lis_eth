@@ -62,7 +62,7 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
     function placeOnMarketplace(address nftContract, address token, uint256 tokenId, uint256 price) external {
         IERC721 erc721 = IERC721(nftContract);
         require(
-            erc721.getApproved(tokenId) == address(this),
+            erc721.getApproved(tokenId) == address(this) || erc721.isApprovedForAll(msg.sender, address(this)),
             "Contract must be approved for nft transfer."
         );
         tokensPrices[nftContract][token][tokenId] = price;    
@@ -86,6 +86,12 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
     function _purchaseByERC20(ERC20Purchase calldata args, address buyer, address receiver) private {
         require(tokensPrices[args.nftContract][args.token][args.tokenId] > 0, "This token is not supported for purchase.");
         IERC20 erc20 = IERC20(args.token);
+        IERC721 erc721 = IERC721(args.nftContract);
+        address seller = erc721.ownerOf(args.tokenId);
+        require(
+            erc721.getApproved(args.tokenId) == address(this) || erc721.isApprovedForAll(seller, address(this)),
+            "Insufficient nft allowance."
+        );
         require(
             erc20.allowance(buyer, address(this)) >= tokensPrices[args.nftContract][args.token][args.tokenId],
             "Insufficient allowance."
@@ -95,8 +101,6 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
             "Insufficient balance."
         );
         erc20.transferFrom(buyer, address(this), tokensPrices[args.nftContract][args.token][args.tokenId]);
-        IERC721 erc721 = IERC721(args.nftContract);
-        address seller = erc721.ownerOf(args.tokenId);
         erc721.transferFrom(seller, receiver, args.tokenId);
         uint256 fee = tokensPrices[args.nftContract][args.token][args.tokenId].mul(fees[args.nftContract]).div(100);
         erc20.transfer(feeReceiver, fee);
@@ -119,9 +123,13 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
 
     function _purchaseByEth(EthPurchase calldata args, address receiver) private {
         require(tokensPrices[args.nftContract][address(0)][args.tokenId] > 0, "This token is not supported for purchase.");
-        require(msg.value == tokensPrices[args.nftContract][address(0)][args.tokenId], "Wrong amount sent.");
         IERC721 erc721 = IERC721(args.nftContract);
         address payable seller = payable(erc721.ownerOf(args.tokenId));
+        require(
+            erc721.getApproved(args.tokenId) == address(this) || erc721.isApprovedForAll(seller, address(this)),
+            "Insufficient nft allowance."
+        );
+        require(msg.value == tokensPrices[args.nftContract][address(0)][args.tokenId], "Wrong amount sent.");
         erc721.transferFrom(seller, receiver, args.tokenId);
         uint256 fee = tokensPrices[args.nftContract][address(0)][args.tokenId].mul(fees[args.nftContract]).div(100);
         feeReceiver.transfer(fee);
