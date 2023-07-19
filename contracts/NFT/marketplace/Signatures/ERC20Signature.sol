@@ -25,7 +25,6 @@ contract ERC20Signature is SignatureBase {
         return keccak256(
             abi.encodePacked(
                 args.nftContract,
-                args.token,
                 args.tokenId
             )
         );

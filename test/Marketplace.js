@@ -153,8 +153,21 @@ describe('Marketplace', function() {
             await erc721.connect(owner).mint(addr1.address, nftHash);
             await mintLis(erc20Lis, owner);
             await expectRevert(
-                marketplace.connect(addr1).purchaseByERC20([erc721.address, erc20Lis.address, 1]),
+                marketplace.connect(addr1).purchaseByERC20([erc721.address, 1]),
                 'This token is not supported for purchase.'
+            );
+        })
+
+        it('Throw error if trying to list by ETH and buy by ERC20.', async function() {
+            await erc721.connect(owner).mint(owner.address, nftHash);
+            await mintLis(erc20Lis, owner);
+            await erc721.connect(owner).approve(marketplace.address, 1);
+            await erc20Lis.connect(owner).transfer(addr1.address, ONE_GWEI);
+            await marketplace.connect(owner).placeOnMarketplace(erc721.address, ZERO_ADDRESS, 1, ONE_GWEI);
+            await erc20Lis.connect(addr1).approve(marketplace.address, ONE_GWEI);
+            await expectRevert(
+                marketplace.connect(addr1).purchaseByERC20([erc721.address, 1]),
+                'Currency must be ERC20 token.'
             );
         })
 
@@ -173,7 +186,7 @@ describe('Marketplace', function() {
             await erc721.connect(owner).approve(marketplace.address, 1);
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 1, ONE_GWEI);
             await expectRevert(
-                marketplace.connect(addr1).purchaseByERC20([erc721.address, erc20Lis.address, 1]),
+                marketplace.connect(addr1).purchaseByERC20([erc721.address, 1]),
                 'Insufficient allowance.'
             );
         })
@@ -188,7 +201,7 @@ describe('Marketplace', function() {
             await erc20Lis.connect(addr1).approve(marketplace.address, ONE_GWEI);
 
             await expectRevert(
-                marketplace.connect(addr1).purchaseByERC20([erc721.address, erc20Lis.address, 1]),
+                marketplace.connect(addr1).purchaseByERC20([erc721.address, 1]),
                 'Insufficient balance.'
             );
         })
@@ -215,11 +228,11 @@ describe('Marketplace', function() {
             expect(event.tokenId).to.equal(1);
             expect(event.currency).to.equal(erc20Lis.address);
             expect(event.price).to.equal(nftPrice);
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
 
             const secondNftPrice = nftPrice * 2;
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 2, secondNftPrice);
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 2)).to.equal(secondNftPrice);
+            expect((await marketplace.products(erc721.address, 2)).price).to.equal(secondNftPrice);
         })
 
         it('Purchase works right.', async function() {
@@ -240,8 +253,8 @@ describe('Marketplace', function() {
               });
             });
 
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(nftPrice);
-            await marketplace.connect(addr1).purchaseByERC20([erc721.address, erc20Lis.address, 1]);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
+            await marketplace.connect(addr1).purchaseByERC20([erc721.address, 1]);
 
             const event = await eventPromise;
             expect(event.seller).to.equal(owner.address);
@@ -251,22 +264,22 @@ describe('Marketplace', function() {
             expect(event.nftContract).to.equal(erc721.address);
             expect(event.tokenId).to.equal(1);
             expect(event.currency).to.equal(erc20Lis.address);
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(0);
 
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 2)).to.equal(nftPrice);
-            await marketplace.connect(addr1).purchaseByERC20([erc721.address, erc20Lis.address, 2]);
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 2)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 2)).price).to.equal(nftPrice);
+            await marketplace.connect(addr1).purchaseByERC20([erc721.address, 2]);
+            expect((await marketplace.products(erc721.address, 2)).price).to.equal(0);
             
             await erc20Lis.connect(owner).transfer(addr2.address, nftPrice * 2);
             await erc721.connect(owner).mint(owner.address, nftHash);
             await erc721.connect(owner).approve(marketplace.address, 3);
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 3, nftPrice);
             await erc20Lis.connect(addr2).approve(marketplace.address, nftPrice);
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 3)).to.equal(nftPrice);
-            await marketplace.connect(addr2).purchaseByERC20([erc721.address, erc20Lis.address, 3]);
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 3)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 3)).price).to.equal(nftPrice);
+            await marketplace.connect(addr2).purchaseByERC20([erc721.address, 3]);
+            expect((await marketplace.products(erc721.address, 3)).price).to.equal(0);
             await expectRevert(
-                marketplace.connect(addr2).purchaseByERC20([erc721.address, erc20Lis.address, 3]),
+                marketplace.connect(addr2).purchaseByERC20([erc721.address, 3]),
                 'This token is not supported for purchase.',
             );
         })
@@ -282,7 +295,7 @@ describe('Marketplace', function() {
             await erc721.connect(owner).approve(addr2.address, 1);
             await erc721.connect(addr2).transferFrom(owner.address, addr2.address, 1);
             await expectRevert(
-                marketplace.connect(addr1).purchaseByERC20([erc721.address, erc20Lis.address, 1]),
+                marketplace.connect(addr1).purchaseByERC20([erc721.address, 1]),
                 'Insufficient nft allowance.'
             );
             await erc721.connect(addr2).transferFrom(addr2.address, owner.address, 1);
@@ -294,9 +307,9 @@ describe('Marketplace', function() {
               });
             });
 
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
             await erc721.connect(owner).approve(marketplace.address, 1);
-            await marketplace.connect(addr1).purchaseByERC20([erc721.address, erc20Lis.address, 1]);
+            await marketplace.connect(addr1).purchaseByERC20([erc721.address, 1]);
             const event = await eventPromise;
             expect(event.seller).to.equal(owner.address);
             expect(event.buyer).to.equal(addr1.address);
@@ -305,12 +318,12 @@ describe('Marketplace', function() {
             expect(event.nftContract).to.equal(erc721.address);
             expect(event.tokenId).to.equal(1);
             expect(event.currency).to.equal(erc20Lis.address);
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(0);
         })
 
         it(`Can't purchase with signature with wallet != adminBuyer`, async function() {
             const nftPrice = ONE_GWEI;
-            const purchaseERC20Args = [erc721.address, erc20Lis.address, 1];
+            const purchaseERC20Args = [erc721.address, 1];
             const buyer = addr1;
             const adminBuyer = addr2;
             await erc721.connect(owner).mint(owner.address, nftHash);
@@ -320,7 +333,7 @@ describe('Marketplace', function() {
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 1, nftPrice);
             await erc20Lis.connect(adminBuyer).approve(marketplace.address, nftPrice);
 
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
             const hash = await marketplace.getMessageHashERC20(purchaseERC20Args);
             const sig = await buyer.signMessage(ethers.utils.arrayify(hash));
 
@@ -332,7 +345,7 @@ describe('Marketplace', function() {
 
         it(`Can't purchase with signature using wrong sig.`, async function() {
             const nftPrice = ONE_GWEI;
-            const purchaseERC20Args = [erc721.address, erc20Lis.address, 1];
+            const purchaseERC20Args = [erc721.address, 1];
             const buyer = addr1;
             await erc721.connect(owner).mint(owner.address, nftHash);
             await mintLis(erc20Lis, owner);
@@ -341,7 +354,7 @@ describe('Marketplace', function() {
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 1, nftPrice);
             await erc20Lis.connect(adminBuyer).approve(marketplace.address, nftPrice);
 
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
             const hash = await marketplace.getMessageHashERC20(purchaseERC20Args);
             const sig = await adminBuyer.signMessage(ethers.utils.arrayify(hash));
 
@@ -353,7 +366,7 @@ describe('Marketplace', function() {
 
         it('Purchase with signature works.', async function() {
             const nftPrice = ONE_GWEI;
-            const purchaseERC20Args = [erc721.address, erc20Lis.address, 1];
+            const purchaseERC20Args = [erc721.address, 1];
             const buyer = addr1;
             await erc721.connect(owner).mint(owner.address, nftHash);
             await mintLis(erc20Lis, owner);
@@ -362,7 +375,7 @@ describe('Marketplace', function() {
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 1, nftPrice);
             await erc20Lis.connect(adminBuyer).approve(marketplace.address, nftPrice);
 
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
             const hash = await marketplace.getMessageHashERC20(purchaseERC20Args);
             const sig = await buyer.signMessage(ethers.utils.arrayify(hash));
 
@@ -382,7 +395,7 @@ describe('Marketplace', function() {
             expect(event.nftContract).to.equal(erc721.address);
             expect(event.tokenId).to.equal(1);
             expect(event.currency).to.equal(erc20Lis.address);
-            expect(await marketplace.tokensPrices(erc721.address, erc20Lis.address, 1)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(0);
         })
     })
 
@@ -402,6 +415,18 @@ describe('Marketplace', function() {
             await expectRevert(
                 marketplace.connect(addr1).purchaseByEth([erc721.address, 1]),
                 'This token is not supported for purchase.'
+            );
+        })
+
+        it('Throw error if trying to list by ERC20 and buy by ETH.', async function() {
+            await erc721.connect(owner).mint(owner.address, nftHash);
+            await mintLis(erc20Lis, owner);
+            await erc721.connect(owner).approve(marketplace.address, 1);
+            await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 1, ONE_GWEI);
+            await erc20Lis.connect(addr1).approve(marketplace.address, ONE_GWEI);
+            await expectRevert(
+                marketplace.connect(addr1).purchaseByEth([erc721.address, 1]),
+                'Currency must be zero address.'
             );
         })
 
@@ -426,7 +451,7 @@ describe('Marketplace', function() {
             expect(event.tokenId).to.equal(1);
             expect(event.currency).to.equal(ZERO_ADDRESS);
             expect(event.price).to.equal(nftPrice);
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
         })
 
         it(`Can't purchase if sent wrong amount of ETH.`, async function() {
@@ -461,7 +486,7 @@ describe('Marketplace', function() {
               });
             });
 
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
             await marketplace.connect(addr1).purchaseByEth([erc721.address, 1], { value: nftPrice });
 
             const event = await eventPromise;
@@ -472,11 +497,11 @@ describe('Marketplace', function() {
             expect(event.nftContract).to.equal(erc721.address);
             expect(event.tokenId).to.equal(1);
             expect(event.currency).to.equal
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(0);
 
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 2)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 2)).price).to.equal(nftPrice);
             await marketplace.connect(addr1).purchaseByEth([erc721.address, 2], { value: nftPrice });
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 2)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 2)).price).to.equal(0);
             await expectRevert(
                 marketplace.connect(addr1).purchaseByEth([erc721.address, 2], { value: nftPrice }),
                 'This token is not supported for purchase.'
@@ -491,7 +516,7 @@ describe('Marketplace', function() {
             await erc721.connect(owner).approve(marketplace.address, 1);
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, ZERO_ADDRESS, 1, nftPrice);
 
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
             const hash = await marketplace.getMessageHashETH(purchaseArgs);
             const sig = await receiver.signMessage(ethers.utils.arrayify(hash));
 
@@ -531,7 +556,7 @@ describe('Marketplace', function() {
               });
             });
 
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
             await erc721.connect(owner).approve(marketplace.address, 1);
             await marketplace.connect(addr1).purchaseByEth([erc721.address, 1], { value: nftPrice });
             const event = await eventPromise;
@@ -542,7 +567,7 @@ describe('Marketplace', function() {
             expect(event.nftContract).to.equal(erc721.address);
             expect(event.tokenId).to.equal(1);
             expect(event.currency).to.equal(ZERO_ADDRESS);
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(0);
         })
     })
 
@@ -570,13 +595,13 @@ describe('Marketplace', function() {
               });
             });
 
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(nftPrice);
-            await marketplace.connect(owner).unlistFromMarketplace(erc721.address, ZERO_ADDRESS, 1);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
+            await marketplace.connect(owner).unlistFromMarketplace(erc721.address, 1);
             const event = await eventPromise;
             expect(event.nftContract).to.equal(erc721.address);
             expect(event.currency).to.equal(ZERO_ADDRESS);
             expect(event.tokenId).to.equal(1);
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(0);
         })
 
         it('Admin can unlist NFT.', async function() {
@@ -593,13 +618,13 @@ describe('Marketplace', function() {
               });
             });
 
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(nftPrice);
-            await marketplace.connect(addr1).unlistFromMarketplace(erc721.address, ZERO_ADDRESS, 1);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
+            await marketplace.connect(addr1).unlistFromMarketplace(erc721.address, 1);
             const event = await eventPromise;
             expect(event.nftContract).to.equal(erc721.address);
             expect(event.currency).to.equal(ZERO_ADDRESS);
             expect(event.tokenId).to.equal(1);
-            expect(await marketplace.tokensPrices(erc721.address, ZERO_ADDRESS, 1)).to.equal(0);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(0);
         })
 
         it(`Someone else can't unlist NFT`, async function() {
@@ -608,7 +633,7 @@ describe('Marketplace', function() {
             await erc721.connect(owner).approve(marketplace.address, 1);
             await marketplace.connect(owner).placeOnMarketplace(erc721.address, ZERO_ADDRESS, 1, nftPrice);
             await expectRevert(
-                marketplace.connect(addr2).unlistFromMarketplace(erc721.address, ZERO_ADDRESS, 1),
+                marketplace.connect(addr2).unlistFromMarketplace(erc721.address, 1),
                 'Invalid sender.'
             );
         })

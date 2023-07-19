@@ -7,12 +7,10 @@ pragma solidity ^0.8.0;
  *         Designed to fit efficiently in one storage slot.
  * 
  * @param nftContract Address of nft contract
- * @param token Address of purchase currency: erc20 token or zero address if eth.
  * @param tokenId Id of nft from nftContract
  */
 struct ERC20Purchase {
     address nftContract;
-    address token;
     uint256 tokenId;
 }
 
@@ -26,4 +24,9 @@ struct ERC20Purchase {
 struct EthPurchase {
     address nftContract;
     uint256 tokenId;
+}
+
+struct Product {
+    address currency;
+    uint256 price;
 }
