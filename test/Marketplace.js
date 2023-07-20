@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { expectRevert } = require('@openzeppelin/test-helpers')
-const { onlyOwnerErrorStr } = require('./utils/errors-strings');
+const { notOwnerErrorStr } = require('./utils/errors-strings');
 
 const ONE_GWEI = 1_000_000_000;
 const nftHash = 'x6d795f76616c7565';
@@ -98,7 +98,7 @@ describe('Marketplace', function() {
         it('Only owner can set fee receiver.', async function() {
             await expectRevert(
                 marketplace.connect(addr1).setFeeReceiver(addr1.address),
-                onlyOwnerErrorStr
+                notOwnerErrorStr
             );
 
             await marketplace.connect(owner).setFeeReceiver(addr1.address);
@@ -111,7 +111,7 @@ describe('Marketplace', function() {
 
             await expectRevert(
                 marketplace.connect(addr1).setFee(token, fee),
-                onlyOwnerErrorStr
+                notOwnerErrorStr
             );
             
             const filter = marketplace.filters.FeeSet(null, null);
@@ -131,7 +131,7 @@ describe('Marketplace', function() {
         it('Only owner can set admin.', async function() {
             await expectRevert(
                 marketplace.connect(addr1).setAdmin(addr1.address),
-                onlyOwnerErrorStr
+                notOwnerErrorStr
             );
 
             await marketplace.connect(owner).setAdmin(addr1.address);
