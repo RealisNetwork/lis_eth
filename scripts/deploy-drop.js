@@ -146,7 +146,7 @@ async function initializeDropContractInOnce(contract, params) {
 }
 
 function getWalletWithProvider() {
-  const dropAddress = '0x0AcC26FC3648b750eB6Eb97C41a7049FEcFDF683';
+  const dropAddress = '0x1875aD53421F343A9A8A60d7026850c6C5286e38';
   const provider = new ethers.providers.JsonRpcProvider(`https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`);
   const privateKey = process.env.PRIVATE_KEY;
   const wallet = new ethers.Wallet(privateKey, provider);
@@ -154,11 +154,14 @@ function getWalletWithProvider() {
 }
 
 async function main() {
+  console.log('Requesting...');
   const dropContract = getWalletWithProvider();
-  await initializeDropContractInOnce(dropContract, initializeParams);
+  console.log('owner = ', (await dropContract.ownerOf(3)));
+  // await initializeDropContractInOnce(dropContract, initializeParams);
   // await initializeDropContract(dropContract, initializeParams);
   // await deployStraight();
   // await deployThroughProxy();
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

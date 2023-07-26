@@ -28,5 +28,5 @@ const multiConfigure = [
     [],
     [],
     [],
-    [],
+    []
 ]

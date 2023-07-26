@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
+import "./ERC721SeaDrop/ERC721SeaDrop.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -9,7 +10,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./common/meta-transactions/ContextMixin.sol";
 import "./common/meta-transactions/NativeMetaTransaction.sol";
 
-contract EggNft is ERC721, Ownable, ContextMixin, NativeMetaTransaction, AccessControl {
+contract EggNft is ERC721SeaDrop, Ownable, ContextMixin, NativeMetaTransaction, AccessControl {
     using Counters for Counters.Counter;
 
     /**
