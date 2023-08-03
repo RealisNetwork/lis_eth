@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { EthPurchase } from "../MarketplaceStructs.sol";
+import { PurchaseArgs } from "../MarketplaceStructs.sol";
 import "./SignatureBase.sol";
 
 contract EthSignature is SignatureBase {
     function verifySignatureEth(
-        EthPurchase calldata args,
+        PurchaseArgs calldata args,
         bytes memory signature,
         address receiver
     ) public pure returns (bool) {
@@ -16,7 +16,7 @@ contract EthSignature is SignatureBase {
         return recoverSigner(ethSignedMessageHash, signature) == receiver;
     }
 
-    function getMessageHashETH(EthPurchase calldata args)
+    function getMessageHashETH(PurchaseArgs calldata args)
         public
         pure
         returns (bytes32)

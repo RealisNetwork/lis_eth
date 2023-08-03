@@ -6,14 +6,15 @@
 // global scope, and execute the script.
 const hre = require("hardhat");
 const { ethers } = require('hardhat');
-const [ _adminBuyer, _feeReceiver ] = require('./args/marketplace-args');
+const [ _adminBuyer, _feeReceiver, _cexCollector ] = require('./args/marketplace-args');
 
 async function deploy() {
   const MarketplaceArt = await ethers.getContractFactory('LisMarketplace');
   console.log('Deploying Marketplace...');
   const marketplace = await MarketplaceArt.deploy(
     _adminBuyer,
-    _feeReceiver
+    _feeReceiver,
+    _cexCollector,
   );
   await marketplace.deployed();
   console.log('Marketplace deployed to: ', marketplace.address);

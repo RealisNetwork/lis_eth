@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ERC20Purchase } from "../MarketplaceStructs.sol";
+import { PurchaseArgs } from "../MarketplaceStructs.sol";
 import "./SignatureBase.sol";
 
 contract ERC20Signature is SignatureBase {
 
     function verifySignatureERC20(
-        ERC20Purchase calldata args,
+        PurchaseArgs calldata args,
         bytes memory signature,
         address receiver
     ) public pure returns (bool) {
@@ -17,7 +17,7 @@ contract ERC20Signature is SignatureBase {
         return recoverSigner(ethSignedMessageHash, signature) == receiver;
     }
 
-    function getMessageHashERC20(ERC20Purchase calldata args)
+    function getMessageHashERC20(PurchaseArgs calldata args)
         public
         pure
         returns (bytes32)

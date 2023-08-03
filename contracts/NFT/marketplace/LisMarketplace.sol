@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import { ERC20Purchase, EthPurchase, Product } from "./marketplace/MarketplaceStructs.sol";
-import "./marketplace/Signatures/ERC20Signature.sol";
-import "./marketplace/Signatures/EthSignature.sol";
+import { PurchaseArgs, Product } from "./MarketplaceStructs.sol";
+import "./Signatures/ERC20Signature.sol";
+import "./Signatures/EthSignature.sol";
 
 
 contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
@@ -61,6 +61,7 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
 
     function placeOnMarketplace(address nftContract, address currency, uint256 tokenId, uint256 price) external {
         IERC721 erc721 = IERC721(nftContract);
+        require(fees[nftContract] > 0, "Marketplace doesn't serve this nft contract.");
         require(
             erc721.getApproved(tokenId) == address(this) || erc721.isApprovedForAll(msg.sender, address(this)),
             "Contract must be approved for nft transfer."
@@ -79,14 +80,17 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
         delete products[nftContract][tokenId];
     }
 
-    function purchaseByERC20(ERC20Purchase calldata args) external {
+    function purchaseByERC20(PurchaseArgs calldata args) external {
         _purchaseByERC20(args, msg.sender, msg.sender);
     }
 
-    function _purchaseByERC20(ERC20Purchase calldata args, address buyer, address receiver) private {
-        require(products[args.nftContract][args.tokenId].price > 0, "This token is not supported for purchase.");
-        require(products[args.nftContract][args.tokenId].currency != address(0), "Currency must be ERC20 token.");
-        IERC20 erc20 = IERC20(products[args.nftContract][args.tokenId].currency);
+    function _purchaseByERC20(PurchaseArgs calldata args, address buyer, address nftReceiver) private {
+        uint256 price = products[args.nftContract][args.tokenId].price;
+        address currency = products[args.nftContract][args.tokenId].currency;
+        require(fees[args.nftContract] > 0, "This NFT contract has not been listed.");
+        require(price > 0, "This token is not supported for purchase.");
+        require(currency != address(0), "Currency must be ERC20 token.");
+        IERC20 erc20 = IERC20(currency);
         IERC721 erc721 = IERC721(args.nftContract);
         address seller = erc721.ownerOf(args.tokenId);
         require(
@@ -94,18 +98,49 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
             "Insufficient nft allowance."
         );
         require(
-            erc20.allowance(buyer, address(this)) >= products[args.nftContract][args.tokenId].price,
+            erc20.allowance(buyer, address(this)) >= price,
             "Insufficient allowance."
         );
         require(
-            erc20.balanceOf(buyer) >= products[args.nftContract][args.tokenId].price,
+            erc20.balanceOf(buyer) >= price,
             "Insufficient balance."
         );
-        erc20.transferFrom(buyer, address(this), products[args.nftContract][args.tokenId].price);
-        erc721.transferFrom(seller, receiver, args.tokenId);
-        uint256 fee = products[args.nftContract][args.tokenId].price.mul(fees[args.nftContract]).div(100);
+        uint256 fee = price.mul(fees[args.nftContract]).div(100);
+        erc20.transferFrom(buyer, address(this), price);
+        erc721.transferFrom(seller, nftReceiver, args.tokenId);
         erc20.transfer(feeReceiver, fee);
-        erc20.transfer(seller, products[args.nftContract][args.tokenId].price.sub(fee));
+        erc20.transfer(seller, price.sub(fee));
+        emit Purchase(
+            seller,
+            nftReceiver,
+            args.nftContract,
+            args.tokenId,
+            currency,
+            fee,
+            price
+        );
+        delete products[args.nftContract][args.tokenId];
+    }
+
+    function purchaseByEth(PurchaseArgs calldata args) external payable {
+        _purchaseByEth(args, msg.sender, true);
+    }
+
+    function _purchaseByEth(PurchaseArgs calldata args, address receiver, bool sendToSeller) private {
+        require(fees[args.nftContract] > 0, "This NFT contract has not been listed.");
+        require(products[args.nftContract][args.tokenId].price > 0, "This token is not supported for purchase.");
+        require(products[args.nftContract][args.tokenId].currency == address(0), "Currency must be zero address.");
+        IERC721 erc721 = IERC721(args.nftContract);
+        address payable seller = payable(erc721.ownerOf(args.tokenId));
+        require(
+            erc721.getApproved(args.tokenId) == address(this) || erc721.isApprovedForAll(seller, address(this)),
+            "Insufficient nft allowance."
+        );
+        require(msg.value == products[args.nftContract][args.tokenId].price, "Wrong amount sent.");
+        uint256 fee = products[args.nftContract][args.tokenId].price.mul(fees[args.nftContract]).div(100);
+        erc721.transferFrom(seller, receiver, args.tokenId);
+        feeReceiver.transfer(fee);
+        seller.transfer(msg.value.sub(fee));
         emit Purchase(
             seller,
             receiver,
@@ -118,30 +153,26 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
         delete products[args.nftContract][args.tokenId];
     }
 
-    function purchaseByEth(EthPurchase calldata args) external payable {
-        _purchaseByEth(args, msg.sender);
-    }
+    function purchaseCex(PurchaseArgs calldata args, bytes memory signature, address receiver) external {
+        require(msg.sender == adminBuyer, "Invalid sender.");
+        require(verifySignatureERC20(args, signature, receiver), "Invalid signature.");
 
-    function _purchaseByEth(EthPurchase calldata args, address receiver) private {
+        require(fees[args.nftContract] > 0, "This NFT contract has not been listed.");
         require(products[args.nftContract][args.tokenId].price > 0, "This token is not supported for purchase.");
-        require(products[args.nftContract][args.tokenId].currency == address(0), "Currency must be zero address.");
         IERC721 erc721 = IERC721(args.nftContract);
-        address payable seller = payable(erc721.ownerOf(args.tokenId));
+        address seller = erc721.ownerOf(args.tokenId);
         require(
             erc721.getApproved(args.tokenId) == address(this) || erc721.isApprovedForAll(seller, address(this)),
             "Insufficient nft allowance."
         );
-        require(msg.value == products[args.nftContract][args.tokenId].price, "Wrong amount sent.");
-        erc721.transferFrom(seller, receiver, args.tokenId);
         uint256 fee = products[args.nftContract][args.tokenId].price.mul(fees[args.nftContract]).div(100);
-        feeReceiver.transfer(fee);
-        seller.transfer(msg.value.sub(fee));
+        erc721.transferFrom(seller, receiver, args.tokenId);
         emit Purchase(
             seller,
             receiver,
             args.nftContract,
             args.tokenId,
-            address(0),
+            products[args.nftContract][args.tokenId].currency,
             fee,
             products[args.nftContract][args.tokenId].price
         );
@@ -153,12 +184,12 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
      *
      * @param args The arguments struct.
      * @param signature Signature from wallet 'buyer', who need to be payed for.
-     * @param receiver Address of wallet who need to be payed for.
+     * @param nftReceiver Address of wallet who need to be payed for.
      */
-    function purchaseByERC20WithSignature(ERC20Purchase calldata args, bytes memory signature, address receiver) external {
+    function purchaseByERC20WithSignatureDex(PurchaseArgs calldata args, bytes memory signature, address nftReceiver) external {
         require(msg.sender == adminBuyer, "Invalid sender.");
-        require(verifySignatureERC20(args, signature, receiver), "Invalid signature.");
-        _purchaseByERC20(args, msg.sender, receiver);
+        require(verifySignatureERC20(args, signature, nftReceiver), "Invalid signature.");
+        _purchaseByERC20(args, msg.sender, nftReceiver);
     }
 
     /**
@@ -168,9 +199,15 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
      * @param signature Signature from wallet 'buyer', who need to be payed for.
      * @param receiver Address of wallet who need to be payed for.
      */
-    function purchaseByEthWithSignature(EthPurchase calldata args, bytes memory signature, address receiver) external payable {
+    function purchaseByEthWithSignature(PurchaseArgs calldata args, bytes memory signature, address receiver) external payable {
         require(msg.sender == adminBuyer, "Invalid sender.");
         require(verifySignatureEth(args, signature, receiver), "Invalid signature.");
-        _purchaseByEth(args, receiver);
+        _purchaseByEth(args, receiver, true);
+    }
+
+    function purchaseByEthWithSignatureDex(PurchaseArgs calldata args, bytes memory signature, address receiver) external {
+        require(msg.sender == adminBuyer, "Invalid sender.");
+        require(verifySignatureEth(args, signature, receiver), "Invalid signature.");
+        _purchaseByEth(args, receiver, false);
     }
 }
