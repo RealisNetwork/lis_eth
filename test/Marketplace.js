@@ -601,6 +601,42 @@ describe('Marketplace', function() {
             );
         })
 
+        it(`Can't purchase with signature with wallet != adminBuyer.`, async function() {
+            const nftPrice = ONE_GWEI;
+            const purchaseERC20Args = [erc721.address, 1];
+            const buyer = addr1;
+            await erc721.connect(owner).mint(owner.address, nftHash);
+            await erc721.connect(owner).approve(marketplace.address, 1);
+            await marketplace.connect(owner).placeOnMarketplace(erc721.address, ZERO_ADDRESS, 1, nftPrice);
+
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
+            const hash = await marketplace.getMessageHashERC20(purchaseERC20Args);
+            const sig = await buyer.signMessage(ethers.utils.arrayify(hash));
+            
+            await expectRevert(
+                marketplace.connect(addr3).purchaseByEthWithSignatureDex(purchaseERC20Args, sig, buyer.address),
+                'Invalid sender.'
+            );
+        })
+
+        it(`Can't purchase with signature using wrong sig.`, async function() {
+            const nftPrice = ONE_GWEI;
+            const purchaseEthArgs = [erc721.address, 1];
+            const buyer = addr1;
+            await erc721.connect(owner).mint(owner.address, nftHash);
+            await erc721.connect(owner).approve(marketplace.address, 1);
+            await marketplace.connect(owner).placeOnMarketplace(erc721.address, ZERO_ADDRESS, 1, nftPrice);
+
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
+            const hash = await marketplace.getMessageHashERC20(purchaseEthArgs);
+            const sig = await adminBuyer.signMessage(ethers.utils.arrayify(hash));
+
+            await expectRevert(
+                marketplace.connect(adminBuyer).purchaseByEthWithSignatureDex(purchaseEthArgs, sig, buyer.address),
+                'Invalid signature.'
+            );
+        })
+
         it('Purchase with signature works.', async function() {
             const nftPrice = ONE_GWEI;
             const receiver = addr1;
@@ -620,7 +656,7 @@ describe('Marketplace', function() {
               });
             });
 
-            await marketplace.connect(adminBuyer).purchaseByEthWithSignature(purchaseArgs, sig, receiver.address, { value: nftPrice });
+            await marketplace.connect(adminBuyer).purchaseByEthWithSignatureDex(purchaseArgs, sig, receiver.address, { value: nftPrice });
             const event = await eventPromise;
             expect(event.seller).to.equal(owner.address);
             expect(event.buyer).to.equal(receiver.address);

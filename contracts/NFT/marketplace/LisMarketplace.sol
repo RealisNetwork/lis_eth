@@ -123,10 +123,10 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
     }
 
     function purchaseByEth(PurchaseArgs calldata args) external payable {
-        _purchaseByEth(args, msg.sender, true);
+        _purchaseByEth(args, msg.sender);
     }
 
-    function _purchaseByEth(PurchaseArgs calldata args, address receiver, bool sendToSeller) private {
+    function _purchaseByEth(PurchaseArgs calldata args, address receiver) private {
         require(fees[args.nftContract] > 0, "This NFT contract has not been listed.");
         require(products[args.nftContract][args.tokenId].price > 0, "This token is not supported for purchase.");
         require(products[args.nftContract][args.tokenId].currency == address(0), "Currency must be zero address.");
@@ -192,22 +192,16 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
         _purchaseByERC20(args, msg.sender, nftReceiver);
     }
 
-    /**
+   /**
      * @dev Using for pay for purchase for another wallet by ETH.
      *
      * @param args The arguments struct.
      * @param signature Signature from wallet 'buyer', who need to be payed for.
      * @param receiver Address of wallet who need to be payed for.
      */
-    function purchaseByEthWithSignature(PurchaseArgs calldata args, bytes memory signature, address receiver) external payable {
+    function purchaseByEthWithSignatureDex(PurchaseArgs calldata args, bytes memory signature, address receiver) external payable {
         require(msg.sender == adminBuyer, "Invalid sender.");
         require(verifySignatureEth(args, signature, receiver), "Invalid signature.");
-        _purchaseByEth(args, receiver, true);
-    }
-
-    function purchaseByEthWithSignatureDex(PurchaseArgs calldata args, bytes memory signature, address receiver) external {
-        require(msg.sender == adminBuyer, "Invalid sender.");
-        require(verifySignatureEth(args, signature, receiver), "Invalid signature.");
-        _purchaseByEth(args, receiver, false);
+        _purchaseByEth(args, receiver);
     }
 }
