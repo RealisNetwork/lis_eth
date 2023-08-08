@@ -21,6 +21,8 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
      */
     mapping(address => uint256) public fees;
 
+    mapping(address => uint256) public minLimits;
+
     /**
      * @dev Stores listed nft prices: products[nftContract][tokenId]
      */
@@ -59,9 +61,14 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
         adminBuyer = newBuyer;
     }
 
+    function setMinLimit(address currency, uint256 newLimit) public onlyOwner {
+        minLimits[currency] = newLimit;
+    }
+
     function placeOnMarketplace(address nftContract, address currency, uint256 tokenId, uint256 price) external {
         IERC721 erc721 = IERC721(nftContract);
         require(fees[nftContract] > 0, "Marketplace doesn't serve this nft contract.");
+        require(price >= minLimits[currency], "Price lower than minimum limit.");
         require(
             erc721.getApproved(tokenId) == address(this) || erc721.isApprovedForAll(msg.sender, address(this)),
             "Contract must be approved for nft transfer."
