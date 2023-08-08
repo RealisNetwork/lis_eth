@@ -137,6 +137,16 @@ describe('Marketplace', function() {
             await marketplace.connect(owner).setAdmin(addr1.address);
             expect(await marketplace.admin()).to.equal(addr1.address);
         })
+
+        it('Only owner can set minimum limit.', async function() {
+            await expectRevert(
+                marketplace.connect(addr1).setMinLimit(ZERO_ADDRESS, ONE_GWEI),
+                onlyOwnerErrorStr
+            );
+
+            await marketplace.connect(owner).setMinLimit(ZERO_ADDRESS, ONE_GWEI);
+            expect(await marketplace.minLimits(ZERO_ADDRESS)).to.equal(ONE_GWEI);
+        })
     })
     describe('ERC20: List, Purchase', function() {
         beforeEach(async function() {
@@ -793,5 +803,50 @@ describe('Marketplace', function() {
         })
     })
 
+    describe('Other', function() {
+        beforeEach(async function() {
+            await globalBeforeEach();
+            const initializeArgs = {
+                feeReceiver: feeReceiver.address,
+                fee: FEE,
+                token: erc721.address
+            };
+            await initializeMarketplace(owner, marketplace, initializeArgs);
+        })
+
+        it(`Can not place on marketplace with price lower than minimum limit.`, async function() {
+            await marketplace.connect(owner).setMinLimit(ZERO_ADDRESS, ONE_GWEI);
+            await erc721.connect(owner).mint(owner.address, nftHash);
+            await erc721.connect(owner).approve(marketplace.address, 1);
+            await expectRevert(
+                marketplace.connect(owner).placeOnMarketplace(erc721.address, ZERO_ADDRESS, 1, ONE_GWEI - 1),
+                'Price lower than minimum limit.'
+            );
+        })
+
+        it('Place on marketplace works right if price >= minimum limit.', async function() {
+            const nftPrice = ONE_GWEI;
+            await mintLis(erc20Lis, owner);
+            await marketplace.connect(owner).setMinLimit(erc20Lis.address, nftPrice);
+            await erc721.connect(owner).mint(owner.address, nftHash);
+            await erc721.connect(owner).approve(marketplace.address, 1);
+
+            const filter = marketplace.filters.List(null, null, null, null, null);
+            const eventPromise = new Promise((resolve) => {
+            marketplace.on(filter, (seller, nftContract, tokenId, currency, price) => {
+                resolve({ seller, nftContract, tokenId, currency, price });
+              });
+            });
+
+            await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 1, nftPrice);
+            const event = await eventPromise;
+            expect(event.seller).to.equal(owner.address);
+            expect(event.nftContract).to.equal(erc721.address);
+            expect(event.tokenId).to.equal(1);
+            expect(event.currency).to.equal(erc20Lis.address);
+            expect(event.price).to.equal(nftPrice);
+            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
+        })
+    })
 
 })
