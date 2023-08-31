@@ -77,7 +77,7 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
         emit List(msg.sender, nftContract, tokenId, currency, price);
     }
 
-        function unlistFromMarketplace(address nftContract, uint256 tokenId) external {
+    function unlistFromMarketplace(address nftContract, uint256 tokenId) external {
         IERC721 erc721 = IERC721(nftContract);
         require(
             msg.sender == admin || erc721.ownerOf(tokenId) == msg.sender,
