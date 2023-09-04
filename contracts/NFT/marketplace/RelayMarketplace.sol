@@ -1,14 +1,44 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IListMarketplace {
-    function placeOnMarketplace(uint256 amount) external;
-}
+import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
-import "@openzeppelin/contracts-ethereum-package/contracts/GSN/GSNRecipient.sol";
+contract RelayMarketplace is BaseRelayRecipient {
+    address public owner;
+    bytes4 private functionIdentifier = bytes4(keccak256("placeOnMarketplace(uint256)"));
 
-contract RelayMarketplace is GSNRecipient {
-    bytes4 functionIdentifier = bytes4(keccak256("placeOnMarketplace(uint256)"));
+    constructor(address _trustedForwarder) {
+        trustedForwarder = _trustedForwarder;
+        owner = _msgSender();
+    }
+
+    function setTrustedForwarder(address _trustedForwarder) external {
+        require(msg.sender == owner, "Only the owner can set the trusted forwarder");
+        trustedForwarder = _trustedForwarder;
+    }
+
+    function _msgSender() internal override(BaseRelayRecipient) view returns (address) {
+        return BaseRelayRecipient._msgSender();
+    }
+
+    function _msgData() internal override(BaseRelayRecipient) view returns (bytes memory) {
+        return BaseRelayRecipient._msgData();
+    }
+
+    function versionRecipient() external override view returns (string memory) {
+        return "2.2.0";
+    }
+
+    function _postRelayedCall(
+        bytes memory context,
+        bool success,
+        uint256 actualCharge,
+        bytes32 preRetVal
+    ) internal override {
+        // Если у контракта недостаточно средств для оплаты, вернуть ошибку.
+        require(address(this).balance >= actualCharge, "Not enough Matic to pay relayed transaction");
+    }
+
 
     function acceptRelayedCall(
         address relay,
@@ -47,4 +77,6 @@ contract RelayMarketplace is GSNRecipient {
 
     function _postRelayedCall(bytes memory context, bool, uint256 actualCharge, bytes32) internal {
     }
+
+    receive() external payable {}
 }

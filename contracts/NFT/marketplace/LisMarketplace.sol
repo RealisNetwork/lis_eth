@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import { PurchaseArgs, Product } from "./MarketplaceStructs.sol";
+import "./RelayMarketplace.sol";
 import "./Signatures/ERC20Signature.sol";
 import "./Signatures/EthSignature.sol";
 
 
-contract LisMarketplace is Ownable, ERC20Signature, EthSignature {
+contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketplace {
     using SafeMath for uint256;
 
     address public adminBuyer;
