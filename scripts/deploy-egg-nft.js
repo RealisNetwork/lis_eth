@@ -6,27 +6,26 @@
 // global scope, and execute the script.
 const hre = require("hardhat");
 const { ethers } = require('hardhat');
-const { nftArgs } = require('./args/eggs-args');
+const [ name, symbol, baseUri, contractUri, burnTime, proxyRegistryAddress, allowedSeaDrop ] = require('./args/eggs-args');
 
-async function deployLisNft(deploy) {
-  if (!deploy) {
-    return;
-  }
+async function deployLisNft() {
   const EggArt = await ethers.getContractFactory('EggNft');
   console.log('Deploying EggNft...');
   const token = await EggArt.deploy(
-    nftArgs.NAME,
-    nftArgs.SYMBOL,
-    nftArgs.BASE_URI,
-    nftArgs.CONTRACT_URI,
+    name,
+    symbol,
+    baseUri,
+    contractUri,
+    burnTime, 
+    proxyRegistryAddress,
+    allowedSeaDrop
   );
   await token.deployed();
   console.log('EggNft deployed to: ', token.address);
 }
 
 async function main() {
-  // set false to not deploy lis again
-  await deployLisNft(true);
+  await deployLisNft();
 }
 
 // We recommend this pattern to be able to use async/await everywhere

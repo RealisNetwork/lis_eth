@@ -9,6 +9,8 @@ const { ethers } = require('hardhat');
 const [ name, symbol, allowedSeaDrop ] = require('./args/eggs-args');
 const dropABI = require('../artifacts/contracts/NFT/ERC721SeaDrop//ERC721SeaDrop.sol/ERC721SeaDrop.json').abi;
 
+const provider = new ethers.providers.JsonRpcProvider(`https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`);
+
 const initializeParams = {
   seadrop: '0x00005EA00Ac477B1030CE78506496e8C2dE24bf5',
   creator: '0x7798dc46E620F948f94E79c0D9BB842c1E9E4DB3',
@@ -51,7 +53,7 @@ async function deployStraight() {
   console.log('ERC721SeaDrop deployed to: ', drop.address);
 }
 
-async function initializeDropContract(contract, params) {
+async function setDropParameters(contract, params) {
   console.log('Initializing drop contract: ', contract.address);
   await contract.setMaxSupply(params.maxSupply);
   console.log('Max supply was setted.');
@@ -75,7 +77,7 @@ async function initializeDropContract(contract, params) {
   console.log('Contract initialized successfully.');
 }
 
-async function initializeDropContractInOnce(contract, params) {
+async function multiConfigure(contract, signer, params) {
   console.log('Initializing drop contract: ', contract.address);
   // const multiConfigure = {
   //   maxSupply: params.maxSupply,
@@ -139,26 +141,32 @@ async function initializeDropContractInOnce(contract, params) {
     [],
     [],
     [],
-    [],
-]
-  await contract.multiConfigure(multiConfigure, { gasLimit: 500000 });
+    []
+];
+  try {
+    await contract.connect(signer).multiConfigure(multiConfigure, { gasLimit: 500000 });
+  } catch(e) {
+    console.error(e);
+  }
   console.log('Contract initialized successfully.');
 }
 
 function getWalletWithProvider() {
-  const dropAddress = '0x1875aD53421F343A9A8A60d7026850c6C5286e38';
-  const provider = new ethers.providers.JsonRpcProvider(`https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`);
   const privateKey = process.env.PRIVATE_KEY;
-  const wallet = new ethers.Wallet(privateKey, provider);
-  return new ethers.Contract(dropAddress, dropABI, wallet);
+  return new ethers.Wallet(privateKey, provider);
+}
+
+function getDropContract() {
+  const contractAddress = '0x015e51B7D8305b374D7DeF5C583cb4FB19517E54';
+  return new ethers.Contract(contractAddress, dropABI, provider);
 }
 
 async function main() {
-  console.log('Requesting...');
-  const dropContract = getWalletWithProvider();
-  console.log('owner = ', (await dropContract.ownerOf(3)));
-  // await initializeDropContractInOnce(dropContract, initializeParams);
-  // await initializeDropContract(dropContract, initializeParams);
+  const dropContract = getDropContract();
+  const signer = getWalletWithProvider();
+  // console.log('Requesting...');
+  await multiConfigure(dropContract, signer, initializeParams);
+  // await setDropParameters(dropContract, initializeParams);
   // await deployStraight();
   // await deployThroughProxy();
 

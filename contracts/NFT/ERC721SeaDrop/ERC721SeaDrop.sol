@@ -584,6 +584,7 @@ contract ERC721SeaDrop is
      */
     function multiConfigure(MultiConfigureStruct calldata config)
         external
+        virtual
         onlyOwner
     {
         if (config.maxSupply > 0) {

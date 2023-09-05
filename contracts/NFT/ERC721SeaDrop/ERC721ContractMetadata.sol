@@ -71,7 +71,7 @@ contract ERC721ContractMetadata is
      *
      * @param newBaseURI The new base URI to set.
      */
-    function setBaseURI(string calldata newBaseURI) external override {
+    function setBaseURI(string calldata newBaseURI) public override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
@@ -89,7 +89,7 @@ contract ERC721ContractMetadata is
      *
      * @param newContractURI The new contract URI.
      */
-    function setContractURI(string calldata newContractURI) external override {
+    function setContractURI(string calldata newContractURI) public override {
         // Ensure the sender is only the owner or contract itself.
         _onlyOwnerOrSelf();
 
