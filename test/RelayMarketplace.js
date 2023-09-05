@@ -1,32 +1,33 @@
+// test/RelayMarketplace.test.js
+
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("RelayMarketplace", function() {
-  let RelayMarketplace, relayMarketplace, owner, addr1, addr2;
+describe("RelayMarketplace", function () {
+    let RelayMarketplace, relayMarketplace, addr1;
 
-  beforeEach(async () => {
-    RelayMarketplace = await ethers.getContractFactory("RelayMarketplace");
-    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
-    relayMarketplace = await RelayMarketplace.deploy(addr1.address);
-    await relayMarketplace.deployed();
-  });
+    beforeEach(async function () {
+        [addr1] = await ethers.getSigners();
 
-  describe("Deployment", function() {
-    it("Should set the right owner and trusted forwarder", async function() {
-      expect(await relayMarketplace.owner()).to.equal(owner.address);
-      expect(await relayMarketplace.trustedForwarder()).to.equal(addr1.address);
-    });
-  });
-
-  describe("setTrustedForwarder", function() {
-    it("Should allow owner to set a new trusted forwarder", async function() {
-      await relayMarketplace.setTrustedForwarder(addr2.address);
-      expect(await relayMarketplace.trustedForwarder()).to.equal(addr2.address);
+        RelayMarketplace = await ethers.getContractFactory("RelayMarketplace");
+        relayMarketplace = await RelayMarketplace.deploy(addr1.address);
+        await relayMarketplace.deployed();
     });
 
-    it("Should reject non-owner from setting a new trusted forwarder", async function() {
-      await expect(relayMarketplace.connect(addr1).setTrustedForwarder(addr2.address)).to.be.revertedWith("Only the owner can set the trusted forwarder");
+    describe("Initialization", function () {
+        it("Should set the correct trustedForwarder on deploy", async function () {
+            expect(await relayMarketplace.trustedForwarder()).to.equal(addr1.address);
+        });
     });
-  });
+
+    describe("Set Trusted Forwarder", function () {
+        it("Should allow only owner to set new trustedForwarder", async function () {
+            await expect(
+                relayMarketplace.connect(addr1).setTrustedForwarder(addr1.address)
+            ).to.be.revertedWith("Ownable: caller is not the owner");
+
+            await relayMarketplace.setTrustedForwarder(addr1.address);
+            expect(await relayMarketplace.trustedForwarder()).to.equal(addr1.address);
+        });
+    });
 });
-

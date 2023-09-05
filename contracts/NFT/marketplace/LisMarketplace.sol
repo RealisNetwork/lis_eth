@@ -34,10 +34,19 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketpla
     event Unlist(address indexed nftContract, address indexed currency, uint256 indexed tokenId);
     event FeeSet(address indexed token, uint256 indexed fee);
 
-    constructor(address _adminBuyer, address payable _feeReceiver) {
+    constructor(address _adminBuyer, address payable _feeReceiver, address _trustedForwarder) RelayMarketplace(_trustedForwarder) {
         setAdminBuyer(_adminBuyer);
         setFeeReceiver(_feeReceiver);
     }
+
+    function _msgSender() internal override(RelayMarketplace, Context) view returns (address) {
+        return RelayMarketplace._msgSender();
+    }   
+
+    function _msgData() internal override(RelayMarketplace, Context) view returns (bytes calldata) {
+        return RelayMarketplace._msgData();
+    }
+
 
     function setFeeReceiver(address payable _feeReceiver) public onlyOwner {
         feeReceiver = _feeReceiver;
