@@ -158,7 +158,7 @@ contract LisNft is ERC721Enumerable, ContextMixin, NativeMetaTransaction, Ownabl
         returns (bool)
     {
         // if OpenSea's ERC721 Proxy Address is detected, auto-return true
-        if (operator == address(0x58807baD0B376efc12F5AD86aAc70E78ed67deaE)) {
+        if (operator == _proxyRegistryAddress) {
             return true;
         }
 
