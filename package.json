@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@opengsn/contracts": "^3.0.0-beta.6",
+    "@opengsn/provider": "^3.0.0-beta.6",
     "@openzeppelin/contracts": "^4.8.3",
     "dotenv": "^16.0.3"
   }

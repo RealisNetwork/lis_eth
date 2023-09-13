@@ -80,17 +80,17 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketpla
         require(fees[nftContract] > 0, "Marketplace doesn't serve this nft contract.");
         require(price >= minLimits[currency], "Price lower than minimum limit.");
         require(
-            erc721.getApproved(tokenId) == address(this) || erc721.isApprovedForAll(msg.sender, address(this)),
+            erc721.getApproved(tokenId) == address(this) || erc721.isApprovedForAll(_msgSender(), address(this)),
             "Contract must be approved for nft transfer."
         );
         products[nftContract][tokenId] = Product(currency, price);
-        emit List(msg.sender, nftContract, tokenId, currency, price);
+        emit List(_msgSender(), nftContract, tokenId, currency, price);
     }
 
     function unlistFromMarketplace(address nftContract, uint256 tokenId) external {
         IERC721 erc721 = IERC721(nftContract);
         require(
-            msg.sender == admin || erc721.ownerOf(tokenId) == msg.sender,
+            _msgSender() == admin || erc721.ownerOf(tokenId) == _msgSender(),
             "Invalid sender."
             );
         emit Unlist(nftContract, products[nftContract][tokenId].currency, tokenId);
@@ -98,7 +98,7 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketpla
     }
 
     function purchaseByERC20(PurchaseArgs calldata args) external {
-        _purchaseByERC20(args, msg.sender, msg.sender);
+        _purchaseByERC20(args, _msgSender(), _msgSender());
     }
 
     function _purchaseByERC20(PurchaseArgs calldata args, address buyer, address nftReceiver) private {
@@ -140,7 +140,7 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketpla
     }
 
     function purchaseByEth(PurchaseArgs calldata args) external payable {
-        _purchaseByEth(args, msg.sender);
+        _purchaseByEth(args, _msgSender());
     }
 
     function _purchaseByEth(PurchaseArgs calldata args, address receiver) private {
@@ -171,7 +171,7 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketpla
     }
 
     function purchaseCex(PurchaseArgs calldata args, bytes memory signature, address receiver) external {
-        require(msg.sender == adminBuyer, "Invalid sender.");
+        require(_msgSender() == adminBuyer, "Invalid sender.");
         require(verifySignatureERC20(args, signature, receiver), "Invalid signature.");
 
         require(fees[args.nftContract] > 0, "This NFT contract has not been listed.");
@@ -204,9 +204,9 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketpla
      * @param nftReceiver Address of wallet who need to be payed for.
      */
     function purchaseByERC20WithSignatureDex(PurchaseArgs calldata args, bytes memory signature, address nftReceiver) external {
-        require(msg.sender == adminBuyer, "Invalid sender.");
+        require(_msgSender() == adminBuyer, "Invalid sender.");
         require(verifySignatureERC20(args, signature, nftReceiver), "Invalid signature.");
-        _purchaseByERC20(args, msg.sender, nftReceiver);
+        _purchaseByERC20(args, _msgSender(), nftReceiver);
     }
 
    /**
@@ -217,7 +217,7 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketpla
      * @param receiver Address of wallet who need to be payed for.
      */
     function purchaseByEthWithSignatureDex(PurchaseArgs calldata args, bytes memory signature, address receiver) external payable {
-        require(msg.sender == adminBuyer, "Invalid sender.");
+        require(_msgSender() == adminBuyer, "Invalid sender.");
         require(verifySignatureEth(args, signature, receiver), "Invalid signature.");
         _purchaseByEth(args, receiver);
     }
