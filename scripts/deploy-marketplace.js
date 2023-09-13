@@ -14,6 +14,7 @@ async function deploy() {
   const marketplace = await MarketplaceArt.deploy(
     _adminBuyer,
     _feeReceiver,
+    '0xB2b5841DBeF766d4b521221732F9B618fCf34A87',
   );
   await marketplace.deployed();
   console.log('Marketplace deployed to: ', marketplace.address);
