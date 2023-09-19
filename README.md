@@ -9,13 +9,16 @@ To launch project locally.
 5. To check gas in called functions, run: "npm run test_gas"
 
 To verify contract on scan websites, example of command:
-npx hardhat verify --network polygon 0xaf88bF8bD38A3C3413a97787869F865d63Ffc388
+npx hardhat verify --network polygon_mumbai 0xAAfF7221017c6C13615FfACA1E2Ba52c1Fe5b713
 
 npx hardhat verify --network polygon --constructor-args arguments.js DEPLOYED_CONTRACT_ADDRESS
 
 
 To deploy example:
-npx hardhat run --network polygon_main scripts/deploy.js
+npx hardhat run --network polygon_mumbai scripts/deploy-marketplace.js
 
 To connect to network using console/test connection: 
 npx hardhat console --network mainnet
+
+
+npx hardhat flatten > flatten.sol
