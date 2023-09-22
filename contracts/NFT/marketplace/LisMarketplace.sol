@@ -83,6 +83,10 @@ contract LisMarketplace is Ownable, ERC20Signature, EthSignature, RelayMarketpla
             erc721.getApproved(tokenId) == address(this) || erc721.isApprovedForAll(_msgSender(), address(this)),
             "Contract must be approved for nft transfer."
         );
+        require(
+            erc721.ownerOf(tokenId) == _msgSender(),
+            "Invalid sender."
+        );
         products[nftContract][tokenId] = Product(currency, price);
         emit List(_msgSender(), nftContract, tokenId, currency, price);
     }
