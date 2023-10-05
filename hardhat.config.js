@@ -3,6 +3,7 @@ require('@nomiclabs/hardhat-ethers');
 require('dotenv').config();
 require("hardhat-contract-sizer");
 require("@nomiclabs/hardhat-etherscan");
+require('@openzeppelin/hardhat-upgrades');
 
 
 module.exports = {
@@ -27,15 +28,16 @@ module.exports = {
         },
       },
     ],
-    contractSizer: {
-      // runOnCompile: false,
-      allowUnlimitedContractSize: true,
-    },
   },
   networks: {
    polygon_mumbai: {
       url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
       accounts: [process.env.PRIVATE_KEY],
+    },
+    localhost: {
+      url: "http://127.0.0.1:8545",
+      gas: 2100000,
+      gasPrice: 8000000000
     },
   },
   etherscan: {
@@ -59,5 +61,19 @@ module.exports = {
   contractSizer: {
     runOnCompile: true,
     disambiguatePaths: false,
+  },
+  // defaultNetworks: "localhost",
+  defaultNetworks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
+    localhost: {
+      allowUnlimitedContractSize: true,
+    }
+  },
+  // allowUnlimitedContractSize: true,
+  contractSizer: {
+    // runOnCompile: false,
+    allowUnlimitedContractSize: true,
   },
 };

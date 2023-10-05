@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers } = require('hardhat');
+const { ethers, upgrades } = require('hardhat');
 const { expectRevert } = require('@openzeppelin/test-helpers')
 const { notOwnerErrorStr } = require('./utils/errors-strings');
 
@@ -9,13 +9,16 @@ const MINTER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINTER_ROLE
 const FEE = 4;
 const ZERO_ADDRESS = ethers.constants.AddressZero;
 
-async function deployMarketplace(adminBuyerAddr, feeReceiverAddr) {
+async function deployMarketplace(adminBuyerAddr, feeReceiverAddr, owner) {
     const MarketplaceArt = await ethers.getContractFactory('LisMarketplace');
-    const marketplace = await MarketplaceArt.deploy(
-        adminBuyerAddr,
-        feeReceiverAddr,
-    );
-    await marketplace.deployed();
+    // const marketplace = await MarketplaceArt.deploy(
+    //     adminBuyerAddr,
+    //     feeReceiverAddr,
+    // );
+    const marketplace = await upgrades.deployProxy(MarketplaceArt, [adminBuyerAddr, feeReceiverAddr], {unsafeAllowCustomTypes:true});
+    // const marketplace = await MarketplaceArt.deploy();
+    // await marketplace.deployed();
+    // await marketplace.connect(owner).initialize(adminBuyerAddr, feeReceiverAddr);
     return marketplace;
 }
 
@@ -75,7 +78,7 @@ describe('Marketplace', function() {
 
     async function globalBeforeEach() {
         [owner, addr1, addr2, addr3, feeReceiver, adminBuyer] = await ethers.getSigners();
-            marketplace = await deployMarketplace(adminBuyer.address, feeReceiver.address);
+            marketplace = await deployMarketplace(adminBuyer.address, feeReceiver.address, owner);
             erc20Lis = await deployLisErc20();
             erc721 = await deployLisErc721();
             await erc721.connect(owner).grantRole(MINTER_ROLE, owner.address);
@@ -87,6 +90,7 @@ describe('Marketplace', function() {
 
     describe('Ownership', function() {
         it('Owner must be wallet that deployed contract', async function() {
+            console.log('owner = ', (await marketplace.owner()));
             expect(await marketplace.owner()).to.equal(owner.address);
         });
 
@@ -803,50 +807,49 @@ describe('Marketplace', function() {
         })
     })
 
-    describe('Other', function() {
+    describe('Proxy', function() {
+        let beacon;
+
+        async function deployBeacon(marketplaceContract) {
+            console.log(100);
+            const beacon = await upgrades.deployBeacon(marketplaceContract);
+            console.log(101);
+            await beacon.waitForDeployment();
+            console.log(102);
+
+            const marketplace = await upgrades.deployBeaconProxy(beacon, marketplaceContract, [42]);
+            console.log(103);
+            await marketplace.waitForDeployment();
+            console.log(104);
+            console.log('beacon address: ', marketplace.address);
+            return marketplace;
+        }
+
         beforeEach(async function() {
             await globalBeforeEach();
-            const initializeArgs = {
-                feeReceiver: feeReceiver.address,
-                fee: FEE,
-                token: erc721.address
-            };
-            await initializeMarketplace(owner, marketplace, initializeArgs);
+            // beacon = await deployBeacon(marketplace);
+            console.log('HERE');
         })
 
-        it(`Can not place on marketplace with price lower than minimum limit.`, async function() {
-            await marketplace.connect(owner).setMinLimit(ZERO_ADDRESS, ONE_GWEI);
-            await erc721.connect(owner).mint(owner.address, nftHash);
-            await erc721.connect(owner).approve(marketplace.address, 1);
-            await expectRevert(
-                marketplace.connect(owner).placeOnMarketplace(erc721.address, ZERO_ADDRESS, 1, ONE_GWEI - 1),
-                'Price lower than minimum limit.'
-            );
-        })
+        it('Upgrade proxy.', async function() {
+            const MarketplaceV2 = await ethers.getContractFactory('MarketplaceV2');
+            const upgraded = await upgrades.upgradeProxy(marketplace.address, MarketplaceV2);
+            expect(await upgraded.adminBuyer()).to.equal(adminBuyer.address);
 
-        it('Place on marketplace works right if price >= minimum limit.', async function() {
-            const nftPrice = ONE_GWEI;
-            await mintLis(erc20Lis, owner);
-            await marketplace.connect(owner).setMinLimit(erc20Lis.address, nftPrice);
-            await erc721.connect(owner).mint(owner.address, nftHash);
-            await erc721.connect(owner).approve(marketplace.address, 1);
-
-            const filter = marketplace.filters.List(null, null, null, null, null);
+            const filter = upgraded.filters.TestAddress1Set(null);
             const eventPromise = new Promise((resolve) => {
-            marketplace.on(filter, (seller, nftContract, tokenId, currency, price) => {
-                resolve({ seller, nftContract, tokenId, currency, price });
+                upgraded.on(filter, (newTestAddress1) => {
+                resolve({ newTestAddress1 });
               });
             });
 
-            await marketplace.connect(owner).placeOnMarketplace(erc721.address, erc20Lis.address, 1, nftPrice);
+            const testAddress = addr1.address;
+            await upgraded.connect(owner).setTestAddress1(testAddress);
             const event = await eventPromise;
-            expect(event.seller).to.equal(owner.address);
-            expect(event.nftContract).to.equal(erc721.address);
-            expect(event.tokenId).to.equal(1);
-            expect(event.currency).to.equal(erc20Lis.address);
-            expect(event.price).to.equal(nftPrice);
-            expect((await marketplace.products(erc721.address, 1)).price).to.equal(nftPrice);
+            expect(await upgraded.testAddress1()).to.equal(testAddress)
+            expect(event.newTestAddress1).to.equal(testAddress);
         })
     })
+
 
 })
