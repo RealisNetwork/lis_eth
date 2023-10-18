@@ -28,7 +28,7 @@ contract RelayMarketplace is OwnableUpgradeable, ERC2771Recipient {
         return super._msgData();
     }
 
-    function versionRecipient() external view returns (string memory) {
+    function versionRecipient() external pure returns (string memory) {
         return "2.2.0";
     }
 

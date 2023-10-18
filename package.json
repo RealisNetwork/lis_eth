@@ -27,7 +27,8 @@
     "@openzeppelin/test-helpers": "^0.5.16",
     "chai": "^4.3.7",
     "hardhat": "^2.14.0",
-    "hardhat-contract-sizer": "^2.8.0"
+    "hardhat-contract-sizer": "^2.8.0",
+    "solc": "0.8.17"
   },
   "dependencies": {
     "@opengsn/contracts": "^3.0.0-beta.6",
