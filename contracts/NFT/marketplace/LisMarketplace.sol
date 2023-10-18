@@ -12,7 +12,7 @@ import "./Signatures/ERC20Signature.sol";
 import "./Signatures/EthSignature.sol";
 
 
-contract LisMarketplace is OwnableUpgradeable, ERC20Signature, EthSignature, RelayMarketplace {
+contract LisMarketplace is ERC20Signature, EthSignature, RelayMarketplace {
     using SafeMath for uint256;
 
     bool private initialized;
@@ -38,21 +38,22 @@ contract LisMarketplace is OwnableUpgradeable, ERC20Signature, EthSignature, Rel
 
     // constructor(address _adminBuyer, address payable _feeReceiver, address _trustedForwarder) RelayMarketplace(_trustedForwarder) {}
 
-    function initialize(address _adminBuyer, address payable _feeReceiver) external initializer {
+    function initialize(address _adminBuyer, address payable _feeReceiver, address _trustedForwarder) external initializer {
         require(!initialized, "Contract instance has already been initialized");
         initialized = true;
         OwnableUpgradeable.__Ownable_init();
         setAdminBuyer(_adminBuyer);
         setFeeReceiver(_feeReceiver);
+        RelayMarketplace.initialize(_trustedForwarder);
     }
 
-    function _msgSender() internal override(RelayMarketplace, Context) view returns (address) {
-        return RelayMarketplace._msgSender();
-    }   
+    // function _msgSender() internal override(RelayMarketplace, ContextUpgradeable) view returns (address) {
+    //     return RelayMarketplace._msgSender();
+    // }   
 
-    function _msgData() internal override(RelayMarketplace, Context) view returns (bytes calldata) {
-        return RelayMarketplace._msgData();
-    }
+    // function _msgData() internal override(RelayMarketplace, ContextUpgradeable) view returns (bytes calldata) {
+    //     return RelayMarketplace._msgData();
+    // }
 
 
     function setFeeReceiver(address payable _feeReceiver) public onlyOwner {
