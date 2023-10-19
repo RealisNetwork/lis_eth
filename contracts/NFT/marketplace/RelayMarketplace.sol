@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@opengsn/contracts/src/ERC2771Recipient.sol";
 
 contract RelayMarketplace is OwnableUpgradeable, ERC2771Recipient {
-    bytes4 private functionIdentifier = bytes4(keccak256("placeOnMarketplace(uint256)"));
+    // bytes4 private functionIdentifier = bytes4(keccak256("placeOnMarketplace(uint256)"));
 
     // constructor(address _trustedForwarder) {
     //     _setTrustedForwarder(_trustedForwarder);

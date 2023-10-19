@@ -9,13 +9,13 @@ const MINTER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINTER_ROLE
 const FEE = 4;
 const ZERO_ADDRESS = ethers.constants.AddressZero;
 
-async function deployMarketplace(adminBuyerAddr, feeReceiverAddr, owner) {
+async function deployMarketplace(adminBuyerAddr, feeReceiverAddr, trustedForwarderAddr, owner) {
     const MarketplaceArt = await ethers.getContractFactory('LisMarketplace');
     // const marketplace = await MarketplaceArt.deploy(
     //     adminBuyerAddr,
     //     feeReceiverAddr,
     // );
-    const marketplace = await upgrades.deployProxy(MarketplaceArt, [adminBuyerAddr, feeReceiverAddr], {unsafeAllowCustomTypes:true});
+    const marketplace = await upgrades.deployProxy(MarketplaceArt, [adminBuyerAddr, feeReceiverAddr, trustedForwarderAddr], {unsafeAllowCustomTypes:true});
     // const marketplace = await MarketplaceArt.deploy();
     // await marketplace.deployed();
     // await marketplace.connect(owner).initialize(adminBuyerAddr, feeReceiverAddr);
@@ -75,10 +75,11 @@ describe('Marketplace', function() {
     let feeReceiver;
     let erc20Lis;
     let erc721;
+    let trustedForwarder = '0xB2b5841DBeF766d4b521221732F9B618fCf34A87';
 
     async function globalBeforeEach() {
         [owner, addr1, addr2, addr3, feeReceiver, adminBuyer] = await ethers.getSigners();
-            marketplace = await deployMarketplace(adminBuyer.address, feeReceiver.address, owner);
+            marketplace = await deployMarketplace(adminBuyer.address, feeReceiver.address, trustedForwarder, owner);
             erc20Lis = await deployLisErc20();
             erc721 = await deployLisErc721();
             await erc721.connect(owner).grantRole(MINTER_ROLE, owner.address);
@@ -145,7 +146,7 @@ describe('Marketplace', function() {
         it('Only owner can set minimum limit.', async function() {
             await expectRevert(
                 marketplace.connect(addr1).setMinLimit(ZERO_ADDRESS, ONE_GWEI),
-                onlyOwnerErrorStr
+                notOwnerErrorStr
             );
 
             await marketplace.connect(owner).setMinLimit(ZERO_ADDRESS, ONE_GWEI);
