@@ -10,10 +10,10 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
 
-import "./common/meta-transactions/ContextMixin.sol";
-import "./common/meta-transactions/NativeMetaTransaction.sol";
+import "../NFT/common/meta-transactions/ContextMixin.sol";
+import "../NFT/common/meta-transactions/NativeMetaTransaction.sol";
 
-contract LisNft is ERC721EnumerableUpgradeable, ContextMixin, NativeMetaTransaction, OwnableUpgradeable, AccessControl {
+contract LisNftV2 is ERC721EnumerableUpgradeable, ContextMixin, NativeMetaTransaction, OwnableUpgradeable, AccessControl {
     using Counters for Counters.Counter;
 
     /**
@@ -42,6 +42,13 @@ contract LisNft is ERC721EnumerableUpgradeable, ContextMixin, NativeMetaTransact
     address payable public feeReceiver;
     uint256 public ethPrice;
     mapping(address => uint256) public tokensPrices;
+    uint256 public newTestVariable;
+    event NewTestVarSet(uint256 indexed newTestVariable);
+
+    function setTestVar(uint256 _newTestVariable) external {
+        newTestVariable = _newTestVariable;
+        emit NewTestVarSet(_newTestVariable);
+    }
 
     function initialize(
         uint256 mintTimestamp, 

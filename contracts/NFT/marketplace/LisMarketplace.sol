@@ -12,7 +12,7 @@ import "./Signatures/ERC20Signature.sol";
 import "./Signatures/EthSignature.sol";
 
 
-contract LisMarketplace is OwnableUpgradeable, ERC20Signature, EthSignature, RelayMarketplace {
+contract LisMarketplace is OwnableUpgradeable, ERC20Signature, EthSignature {
     using SafeMath for uint256;
 
     bool private initialized;
@@ -46,13 +46,13 @@ contract LisMarketplace is OwnableUpgradeable, ERC20Signature, EthSignature, Rel
         setFeeReceiver(_feeReceiver);
     }
 
-    function _msgSender() internal override(RelayMarketplace, Context) view returns (address) {
-        return RelayMarketplace._msgSender();
-    }   
+    // function _msgSender() internal override(RelayMarketplace, Context) view returns (address) {
+    //     return RelayMarketplace._msgSender();
+    // }   
 
-    function _msgData() internal override(RelayMarketplace, Context) view returns (bytes calldata) {
-        return RelayMarketplace._msgData();
-    }
+    // function _msgData() internal override(RelayMarketplace, Context) view returns (bytes calldata) {
+    //     return RelayMarketplace._msgData();
+    // }
 
 
     function setFeeReceiver(address payable _feeReceiver) public onlyOwner {

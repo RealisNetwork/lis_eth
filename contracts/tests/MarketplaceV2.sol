@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import { ERC20Purchase, EthPurchase, Product } from "../NFT/marketplace/MarketplaceStructs.sol";
+import { Product } from "../NFT/marketplace/MarketplaceStructs.sol";
 import "../NFT/marketplace/Signatures/ERC20Signature.sol";
 import "../NFT/marketplace/Signatures/EthSignature.sol";
 // import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -102,11 +102,11 @@ contract MarketplaceV2 is OwnableUpgradeable, ERC20Signature, EthSignature {
         delete products[nftContract][tokenId];
     }
 
-    function purchaseByERC20(ERC20Purchase calldata args) external {
+    function purchaseByERC20(PurchaseArgs calldata args) external {
         _purchaseByERC20(args, msg.sender, msg.sender);
     }
 
-    function _purchaseByERC20(ERC20Purchase calldata args, address buyer, address receiver) private {
+    function _purchaseByERC20(PurchaseArgs calldata args, address buyer, address receiver) private {
         require(products[args.nftContract][args.tokenId].price > 0, "This token is not supported for purchase.");
         require(products[args.nftContract][args.tokenId].currency != address(0), "Currency must be ERC20 token.");
         IERC20 erc20 = IERC20(products[args.nftContract][args.tokenId].currency);
@@ -141,11 +141,11 @@ contract MarketplaceV2 is OwnableUpgradeable, ERC20Signature, EthSignature {
         delete products[args.nftContract][args.tokenId];
     }
 
-    function purchaseByEth(EthPurchase calldata args) external payable {
+    function purchaseByEth(PurchaseArgs calldata args) external payable {
         _purchaseByEth(args, msg.sender);
     }
 
-    function _purchaseByEth(EthPurchase calldata args, address receiver) private {
+    function _purchaseByEth(PurchaseArgs calldata args, address receiver) private {
         require(products[args.nftContract][args.tokenId].price > 0, "This token is not supported for purchase.");
         require(products[args.nftContract][args.tokenId].currency == address(0), "Currency must be zero address.");
         IERC721 erc721 = IERC721(args.nftContract);
@@ -178,7 +178,7 @@ contract MarketplaceV2 is OwnableUpgradeable, ERC20Signature, EthSignature {
      * @param signature Signature from wallet 'buyer', who need to be payed for.
      * @param receiver Address of wallet who need to be payed for.
      */
-    function purchaseByERC20WithSignature(ERC20Purchase calldata args, bytes memory signature, address receiver) external {
+    function purchaseByERC20WithSignature(PurchaseArgs calldata args, bytes memory signature, address receiver) external {
         require(msg.sender == adminBuyer, "Invalid sender.");
         require(verifySignatureERC20(args, signature, receiver), "Invalid signature.");
         _purchaseByERC20(args, msg.sender, receiver);
@@ -191,7 +191,7 @@ contract MarketplaceV2 is OwnableUpgradeable, ERC20Signature, EthSignature {
      * @param signature Signature from wallet 'buyer', who need to be payed for.
      * @param receiver Address of wallet who need to be payed for.
      */
-    function purchaseByEthWithSignature(EthPurchase calldata args, bytes memory signature, address receiver) external payable {
+    function purchaseByEthWithSignature(PurchaseArgs calldata args, bytes memory signature, address receiver) external payable {
         require(msg.sender == adminBuyer, "Invalid sender.");
         require(verifySignatureEth(args, signature, receiver), "Invalid signature.");
         _purchaseByEth(args, receiver);

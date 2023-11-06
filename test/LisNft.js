@@ -1,9 +1,9 @@
 const { expect } = require('chai');
-const { ethers } = require('hardhat');
+const { ethers, upgrades } = require('hardhat');
 
 const { BigNumber } = ethers;
 
-const { expectRevert, expectEvent } = require('@openzeppelin/test-helpers')
+const { expectRevert, expectEvent, time } = require('@openzeppelin/test-helpers')
 const { 
     makeAccessControleErrorStr, 
     revokeRoleErrorStr,
@@ -20,7 +20,7 @@ const DEFAULT_ADMIN_ROLE = ethers.constants.HashZero;
 
 async function deployNft(nftArgs) {
   const ERC721Token = await ethers.getContractFactory('LisNft');
-  const token = await ERC721Token.deploy(
+  token = await upgrades.deployProxy(ERC721Token, [
     nftArgs.timestamp,
     nftArgs.maxSupply,
     nftArgs.tokenName,
@@ -30,8 +30,19 @@ async function deployNft(nftArgs) {
     nftArgs.feeReceiver,
     nftArgs.baseUri,
     nftArgs.contractUri,
-  );
-  await token.deployed();
+  ], {unsafeAllowCustomTypes:true});
+  // const token = await ERC721Token.deploy(
+    // nftArgs.timestamp,
+    // nftArgs.maxSupply,
+    // nftArgs.tokenName,
+    // nftArgs.symbol,
+    // nftArgs.signer,
+    // nftArgs.proxyRegistry,
+    // nftArgs.feeReceiver,
+    // nftArgs.baseUri,
+    // nftArgs.contractUri,
+  // );
+  // await token.deployed();
   return token;
 }
 
@@ -42,7 +53,7 @@ async function deployLisErc20(args) {
   return erc20;
 }
 
-describe('NFT', function () {
+describe('LisNft', function () {
     let token;
     let owner;
     let addr1;
@@ -50,7 +61,7 @@ describe('NFT', function () {
     let signer;
     const signerPrivate = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
     const MAX_SUPPLY =  1000;
-    const RIGHT_TIME = 1685281800000;
+    const RIGHT_TIME = 1762155563; 1698998229
     const TOKEN_NAME = 'LisNft';
     const TOKEN_SYMBOL = 'LNFT';
     // const nftHash = ethers.utils.hexZeroPad('0x6d795f76616c7565', 32);
@@ -148,6 +159,16 @@ describe('NFT', function () {
     })
 
     describe('Token transfer and mint', () => {
+        it('Check symbol', async function() {
+          // https://gist.github.com/samlaf/a8536c5c1484d1a8a7e16f960bbf5bc2
+          const symbol = await token.symbol();
+          console.log('Symbol = ', symbol);
+          const currentBlock = await ethers.provider.getBlockNumber();
+          const timestamp = (await ethers.provider.getBlock(currentBlock)).timestamp;
+          console.log('Timestamp = ', timestamp);
+          console.log('Timestamp <= right time? ', timestamp <= RIGHT_TIME);
+        }) 
+
         it('should mint a new token', async function () {
             await token.connect(owner).grantRole(MINTER_ROLE, owner.address);
             await token.connect(owner).mint(addr1.address, nftHash);
@@ -796,6 +817,27 @@ describe('NFT', function () {
       for (let i = 0; i < balanceOfAfter; i++) {
         expect(await token.tokenOfOwnerByIndex(owner.address, i)).to.equal(tokenIdsBurned[i]);
       }
+      })
+    })
+
+    describe('Proxy', function() {
+      it('Upgrade proxy', async function() {
+        const nftV2 = await ethers.getContractFactory('LisNftV2');
+        const upgraded = await upgrades.upgradeProxy(token.address, nftV2);
+        expect(await upgraded._mintTimestamp()).to.equal(RIGHT_TIME);
+
+        const filter = upgraded.filters.NewTestVarSet(null);
+        const eventPromise = new Promise((resolve) => {
+          upgraded.on(filter, (_newTestVariable) => {
+            resolve({ _newTestVariable });
+          });
+        });
+
+        const newTestVar = 2991;
+        await upgraded.connect(owner).setTestVar(newTestVar);
+        const event = await eventPromise;
+        expect(await upgraded.newTestVariable()).to.equal(newTestVar);
+        expect(event._newTestVariable).to.equal(newTestVar);
       })
     })
 
