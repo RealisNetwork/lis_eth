@@ -11,11 +11,12 @@ const [ _adminBuyer, _feeReceiver ] = require('./args/marketplace-args');
 async function deploy() {
   const MarketplaceArt = await ethers.getContractFactory('LisMarketplace');
   console.log('Deploying Marketplace...');
-  const marketplace = await MarketplaceArt.deploy(
-    _adminBuyer,
-    _feeReceiver,
-    '0xB2b5841DBeF766d4b521221732F9B618fCf34A87',
-  );
+  const marketplace = await MarketplaceArt.deploy();
+
+  // _adminBuyer,
+  // _feeReceiver,
+  // '0xB2b5841DBeF766d4b521221732F9B618fCf34A87',
+
   await marketplace.deployed();
   console.log('Marketplace deployed to: ', marketplace.address);
 }

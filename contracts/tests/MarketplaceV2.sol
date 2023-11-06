@@ -6,13 +6,13 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import { PurchaseArgs, Product } from "./MarketplaceStructs.sol";
-import "./RelayMarketplace.sol";
-import "./Signatures/ERC20Signature.sol";
-import "./Signatures/EthSignature.sol";
+import { PurchaseArgs, Product } from "../NFT/marketplace/MarketplaceStructs.sol";
+import "../NFT/marketplace/RelayMarketplace.sol";
+import "../NFT/marketplace/Signatures/ERC20Signature.sol";
+import "../NFT/marketplace/Signatures/EthSignature.sol";
 
 
-contract LisMarketplace is ERC20Signature, EthSignature, RelayMarketplace {
+contract MarketplaceV2 is ERC20Signature, EthSignature, RelayMarketplace {
     using SafeMath for uint256;
 
     bool private initialized;
@@ -35,6 +35,9 @@ contract LisMarketplace is ERC20Signature, EthSignature, RelayMarketplace {
     event List(address indexed seller, address indexed nftContract, uint256 indexed tokenId, address currency, uint256 price);
     event Unlist(address indexed nftContract, address indexed currency, uint256 indexed tokenId);
     event FeeSet(address indexed token, uint256 indexed fee);
+    event TestAddress1Set(address indexed newTestAddress1);
+
+    address public testAddress1;
 
     // constructor(address _adminBuyer, address payable _feeReceiver, address _trustedForwarder) RelayMarketplace(_trustedForwarder) {}
 
@@ -45,6 +48,12 @@ contract LisMarketplace is ERC20Signature, EthSignature, RelayMarketplace {
         setAdminBuyer(_adminBuyer);
         setFeeReceiver(_feeReceiver);
         RelayMarketplace.initialize(_trustedForwarder);
+    }
+
+        
+    function setTestAddress1(address newTest1) external {
+        testAddress1 = newTest1;
+        emit TestAddress1Set(newTest1);
     }
 
     // function _msgSender() internal override(RelayMarketplace, ContextUpgradeable) view returns (address) {
