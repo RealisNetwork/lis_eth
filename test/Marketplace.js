@@ -52,18 +52,17 @@ async function deployLisErc721() {
         contractUri: 'https://evm.realiscompany-base.com/',
       };
     const ERC721Token = await ethers.getContractFactory('LisNft');
-    const token = await ERC721Token.deploy(
+    const token = await upgrades.deployProxy(ERC721Token, [
         nftArgs.timestamp,
-    nftArgs.maxSupply,
-    nftArgs.tokenName,
-    nftArgs.symbol,
-    nftArgs.signer,
-    nftArgs.proxyRegistry,
-    nftArgs.feeReceiver,
-    nftArgs.baseUri,
-    nftArgs.contractUri,
-    );
-    await token.deployed();
+        nftArgs.maxSupply,
+        nftArgs.tokenName,
+        nftArgs.symbol,
+        nftArgs.signer,
+        nftArgs.proxyRegistry,
+        nftArgs.feeReceiver,
+        nftArgs.baseUri,
+        nftArgs.contractUri,
+      ], {unsafeAllowCustomTypes:true});
     return token;
     
 }

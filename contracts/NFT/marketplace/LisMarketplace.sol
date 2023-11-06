@@ -36,8 +36,6 @@ contract LisMarketplace is ERC20Signature, EthSignature, RelayMarketplace {
     event Unlist(address indexed nftContract, address indexed currency, uint256 indexed tokenId);
     event FeeSet(address indexed token, uint256 indexed fee);
 
-    // constructor(address _adminBuyer, address payable _feeReceiver, address _trustedForwarder) RelayMarketplace(_trustedForwarder) {}
-
     function initialize(address _adminBuyer, address payable _feeReceiver, address _trustedForwarder) external initializer {
         require(!initialized, "Contract instance has already been initialized");
         initialized = true;
@@ -46,15 +44,6 @@ contract LisMarketplace is ERC20Signature, EthSignature, RelayMarketplace {
         setFeeReceiver(_feeReceiver);
         RelayMarketplace.initialize(_trustedForwarder);
     }
-
-    // function _msgSender() internal override(RelayMarketplace, ContextUpgradeable) view returns (address) {
-    //     return RelayMarketplace._msgSender();
-    // }   
-
-    // function _msgData() internal override(RelayMarketplace, ContextUpgradeable) view returns (bytes calldata) {
-    //     return RelayMarketplace._msgData();
-    // }
-
 
     function setFeeReceiver(address payable _feeReceiver) public onlyOwner {
         feeReceiver = _feeReceiver;
