@@ -39,6 +39,10 @@ module.exports = {
       gas: 2100000,
       gasPrice: 8000000000
     },
+    polygon: {
+      url: `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
+      accounts: [process.env.PRIVATE_KEY],
+    }
   },
   etherscan: {
     apiKey: {

@@ -5,7 +5,7 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 const hre = require("hardhat");
-const { ethers } = require('hardhat');
+const { ethers, upgrades } = require('hardhat');
 const { nftArgs } = require('./args/nft-args');
 
 async function deployLisNft(deploy) {
@@ -14,7 +14,7 @@ async function deployLisNft(deploy) {
   }
   const lisArt = await ethers.getContractFactory('LisNft');
   console.log('Deploying LisNft...');
-  const Lis = await lisArt.deploy(
+  const Lis = await upgrades.deployProxy(
     nftArgs.MINT_TIMESTAMP,
     nftArgs.MAX_SUPPLY,
     nftArgs.TOKEN_NAME,
@@ -24,8 +24,8 @@ async function deployLisNft(deploy) {
     nftArgs.FEE_RECEIVER,
     nftArgs.BASE_URI,
     nftArgs.CONTRACT_URI,
+    {unsafeAllowCustomTypes:true},
   );
-  await Lis.deployed();
   console.log('LisNft deployed to: ', Lis.address);
 }
 
