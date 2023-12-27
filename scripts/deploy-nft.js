@@ -15,6 +15,8 @@ async function deployLisNft(deploy) {
   const lisArt = await ethers.getContractFactory('LisNft');
   console.log('Deploying LisNft...');
   const Lis = await upgrades.deployProxy(
+    lisArt,
+    [
     nftArgs.MINT_TIMESTAMP,
     nftArgs.MAX_SUPPLY,
     nftArgs.TOKEN_NAME,
@@ -24,6 +26,7 @@ async function deployLisNft(deploy) {
     nftArgs.FEE_RECEIVER,
     nftArgs.BASE_URI,
     nftArgs.CONTRACT_URI,
+    ],
     {unsafeAllowCustomTypes:true},
   );
   console.log('LisNft deployed to: ', Lis.address);
