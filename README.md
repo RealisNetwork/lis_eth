@@ -22,3 +22,9 @@ npx hardhat console --network mainnet
 
 
 npx hardhat flatten > flatten.sol
+
+git sumbodules:
+
+git submodule init
+git submodule update --recursive --remote
+

@@ -27,8 +27,11 @@ async function deployLisNft(deploy) {
     nftArgs.BASE_URI,
     nftArgs.CONTRACT_URI,
     ],
-    {unsafeAllowCustomTypes:true},
+    {unsafeAllowCustomTypes:true, initializer: 'initialize'},
   );
+  // console.log('Upgrading proxy');
+  // await upgrades.upgradeProxy(Lis.address, lisArt);
+  // await Lis.waitForDeployment();
   console.log('LisNft deployed to: ', Lis.address);
 }
 
